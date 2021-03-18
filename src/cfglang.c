@@ -5,8 +5,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void *initUserContext(pl2b_Error *error);
-static void destroyUserContext(void *userContext);
+void initConfig(Config *config) {
+  config->address = NULL;
+  config->port = 0;
+  ccVecInit(&config->routes, sizeof(Route));
+}
+
+void dropConfig(Config *config) {
+  ccVecDestroy(&config->routes);
+}
 
 static pl2b_Cmd* configAddr(pl2b_Program *program,
                             void *context,
@@ -23,7 +30,7 @@ static pl2b_Cmd* addRoute(pl2b_Program *program,
                           pl2b_Cmd *command,
                           pl2b_Error *error);
 
-pl2b_Language *getCfgLanguage(void) {
+const pl2b_Language *getCfgLanguage(void) {
   static pl2b_PCallCmd pCallCmds[] = {
     { "listen-address", NULL, configAddr, 0, 0 },
     { "listen-port",    NULL, configPort, 0, 0 },
@@ -36,40 +43,14 @@ pl2b_Language *getCfgLanguage(void) {
     { NULL, NULL, NULL, 0, 0 }
   };
 
-  static pl2b_Language language = (pl2b_Language) {
+  static const pl2b_Language language = (pl2b_Language) {
     "chttpd cfg language",
     "configuration language for chttpd",
-    &initUserContext,
-    &destroyUserContext,
-    NULL,
     pCallCmds,
     NULL
   };
 
   return &language;
-}
-
-static void *initUserContext(pl2b_Error *error) {
-  Config *config = (Config*)malloc(sizeof(Config));
-  if (config == NULL) {
-    pl2b_errPrintf(error,
-                   PL2B_ERR_MALLOC,
-                   pl2b_sourceInfo(NULL, 0),
-                   NULL,
-                   "failed allocating memory for Config");
-    return NULL;
-  }
-
-  config->address = NULL;
-  config->port = 0;
-  ccVecInit(&config->routes, sizeof(Route));
-
-  return config;
-}
-
-static void destroyUserContext(void *userContext) {
-  /* Do nothing here since this will never be used */
-  (void)userContext;
 }
 
 static pl2b_Cmd* configAddr(pl2b_Program *program,
@@ -204,10 +185,7 @@ static pl2b_Cmd* addRoute(pl2b_Program *program,
   route->handlerType = handlerType;
   route->handlerPath = handler;
 
-  return command->next;
-}
+  ccVecPushBack(&config->routes, (void*)route);
 
-void freeConfig(Config *config) {
-  ccVecDestroy(&config->routes);
-  free(config);
+  return command->next;
 }

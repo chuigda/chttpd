@@ -29,8 +29,9 @@ typedef struct st_config {
   ccVec routes;
 } Config;
 
-pl2b_Language *getCfgLanguage(void);
-void freeConfig(Config *config);
+void initConfig(Config *config);
+void dropConfig(Config *config);
+const pl2b_Language *getCfgLanguage(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

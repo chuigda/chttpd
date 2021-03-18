@@ -1,0 +1,15 @@
+.idea/
+
+*.cflags
+*.config
+*.cxxflags
+*.files
+*.includes
+
+*.creator
+*.creator.user
+
+cc_proc_macro
+include_ext/
+src_ext/
+out/

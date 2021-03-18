@@ -3,6 +3,7 @@
 
 #include "cc_vec.h"
 #include "http_base.h"
+#include "util.h"
 
 typedef enum e_http_error {
   HTTP_ERR_NO_ERROR = 0,
@@ -15,8 +16,8 @@ typedef enum e_http_error {
 typedef struct st_http_request {
   HttpMethod method;
   size_t contentLength;
-  ccVec params;
-  ccVec headers;
+  ccVec TP(StringPair) params;
+  ccVec TP(StringPair) headers;
   char body[0];
 } HttpRequest;
 
@@ -27,7 +28,7 @@ typedef struct st_http_response {
   HttpCode code;
   const char *statusText;
   size_t contentLength;
-  ccVec headers;
+  ccVec TP(StringPair) headers;
   char body[0];
 } HttpResponse;
 

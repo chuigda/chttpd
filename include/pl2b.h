@@ -5,15 +5,15 @@
 
 /*** -------------------------- versioning ------------------------- ***/
 
-#define PL2_EDITION       "PL2-B"    /* Latin name */
-#define PL2_EDITION_CN    "霹雳2-丙" /* Chinese name */
-#define PL2_EDITION_RU    "ПЛ2-B"    /* Cyrillic name */
-#define PL2_EDITION_JP    "ピリ-2B"  /* Japanese name */
-#define PL2_EDITION_KR    "펠리-2B"  /* Kroean name */
-#define PL2B_VER_MAJOR    0          /* Major version of PL2B */
-#define PL2B_VER_MINOR    2          /* Minor version of PL2B */
-#define PL2B_VER_PATCH    0          /* Patch version of PL2B */
-#define PL2B_VER_POSTFIX  "Oort"     /* Version postfix */
+#define PL2_EDITION       "PL2-BK"       /* Latin name */
+#define PL2_EDITION_CN    "霹雳2-丙-K"   /* Chinese name */
+#define PL2_EDITION_RU    "ПЛ2-БК"       /* Cyrillic name */
+#define PL2_EDITION_JP    "ピリ-2BK"     /* Japanese name */
+#define PL2_EDITION_KR    "펠리-2BK"     /* Kroean name */
+#define PL2B_VER_MAJOR    0              /* Major version of PL2BK */
+#define PL2B_VER_MINOR    3              /* Minor version of PL2BK */
+#define PL2B_VER_PATCH    0              /* Patch version of PL2BK */
+#define PL2B_VER_POSTFIX  "BlueGiant"    /* Version postfix */
 
 const char *pl2b_getLocaleName(void);
 
@@ -99,8 +99,6 @@ typedef struct st_pl2b_cmd {
   struct st_pl2b_cmd *prev;
   struct st_pl2b_cmd *next;
 
-  void *extraData;
-  void *resolveCache;
   pl2b_SourceInfo sourceInfo;
   pl2b_CmdPart cmd;
   pl2b_CmdPart args[0];
@@ -110,9 +108,8 @@ pl2b_Cmd *pl2b_cmd3(pl2b_SourceInfo sourceInfo,
                     pl2b_CmdPart cmd,
                     pl2b_CmdPart args[]);
 
-pl2b_Cmd *pl2b_cmd6(pl2b_Cmd *prev,
+pl2b_Cmd *pl2b_cmd5(pl2b_Cmd *prev,
                     pl2b_Cmd *next,
-                    void *extraData,
                     pl2b_SourceInfo sourceInfo,
                     pl2b_CmdPart cmd,
                     pl2b_CmdPart args[]);
@@ -182,9 +179,6 @@ typedef struct st_pl2b_langauge {
   const char *langName;
   const char *langInfo;
 
-  pl2b_InitStub *init;
-  pl2b_AtexitStub *atExit;
-  pl2b_CmdCleanupStub *cmdCleanup;
   pl2b_PCallCmd *pCallCmds;
   pl2b_PCallCmdStub *fallback;
 } pl2b_Language;
@@ -194,9 +188,9 @@ typedef pl2b_Language *(pl2b_LoadLanguage)(pl2b_SemVer version,
 
 /*** ----------------------------- Run ----------------------------- ***/
 
-void pl2b_run(pl2b_Program *program, pl2b_Error *error);
 void* pl2b_runWithLanguage(pl2b_Program *program,
                            pl2b_Language *language,
+                           void *userContext,
                            pl2b_Error *error);
 
 #ifdef __cplusplus
