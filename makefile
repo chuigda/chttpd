@@ -1,74 +1,117 @@
+CFLAGS ?= -O2
 WARNINGS := -Wall -Wextra -Wc++-compat
 LOG := sh -c 'printf \\t$$0\\t$$1\\n'
 INCLUDES := -I include -I include_ext
 
 .PHONY: all
-all: include_ext_dir src_ext_dir out_dir pl2 cclib cfglang http
+all: \
+	include_ext_dir \
+	src_ext_dir \
+	out_dir \
+	cclib \
+	util \
+	pl2 \
+	cfglang \
+	agno3 \
+	http
+
+# All headers
+HEADERS = include/agno3.h \
+	include/cfglang.h \
+	include/http.h \
+	include/http_base.h \
+	include/pl2b.h \
+	include_ext/cc_defs.h \
+	include_ext/cc_list.h \
+	include_ext/cc_vec.h \
+
+# Build HTTP objects
+HTTP_OBJECTS := out/http.o
 
 .PHONY: http http_prompt
-http: http_prompt out/libhttp.a
+http: http_prompt ${HTTP_OBJECTS}
 
 http_prompt:
 	@echo Building http library
 
-out/libhttp.a: out/http.o
-	@$(LOG) AR out/http.o
-	@ar -rcs out/libhttp.a out/http.o
-
-out/http.o: src/http.c include/http.h include/http_base.h
+out/http.o: src/http.c ${HEADERS}
 	@$(LOG) CC src/http.c
-	@$(CC) src/http.c $(INCLUDES) $(WARNINGS) $(FLAGS) -c -o out/http.o
+	@$(CC) src/http.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/http.o
+
+# Build AgNO3 lang objects
+AGNO3_OBJECTS := out/agno3.o out/html.o
+
+.PHONY: agno3 agno3_prompt
+agno3: agno3_prompt ${AGNO3_OBJECTS}
+
+agno3_prompt:
+	@echo Building AgNO3 html preprocessor
+
+out/agno3.o: src/agno3.c ${HEADERS}
+	@$(LOG) CC src/agno3.c
+	@$(CC) src/agno3.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/agno3.o
+
+out/html.o: src/html.c ${HEADERS}
+	@$(LOG) CC src/html.c
+	@$(CC) src/html.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/html.o
+
+# Build CFG lang objects
+CFG_LANG_OBJECTS := out/cfglang.o
 
 .PHONY: cfglang cfglang_prompt
-cfglang: cfglang_prompt out/libcfg.a
+cfglang: cfglang_prompt ${CFG_LANG_OBJECTS}
 
 cfglang_prompt:
 	@echo Building chttpd configuration language
 
-out/libcfg.a: out/cfglang.o out/libpl2.a
-	@$(LOG) AR out/cfglang.o
-	@ar -rcs out/libcfg.a out/cfglang.o out/libpl2.a
-
-out/cfglang.o: src/cfglang.c include/cfglang.h include/http_base.h
+out/cfglang.o: src/cfglang.c ${HEADERS}
 	@$(LOG) CC src/cfglang.c
-	@$(CC) src/cfglang.c $(INCLUDES) $(WARNINGS) $(FLAGS) -c -o out/cfglang.o
+	@$(CC) src/cfglang.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/cfglang.o
+
+# Build PL2 objects
+PL2_OBJECTS := out/pl2b.o
 
 .PHONY: pl2 pl2_prompt
-pl2: pl2_prompt out/libpl2.a
+pl2: pl2_prompt ${PL2_OBJECTS}
 
 pl2_prompt:
 	@echo Building PL2 scripting library
 
-out/libpl2.a: out/pl2b.o
-	@$(LOG) AR out/libpl2.a
-	@ar -rcs out/libpl2.a out/pl2b.o
-	@$(LOG) CHMOD out/libpl2.a
-	@chmod a+x out/libpl2.a
-
-out/pl2b.o: pl2/pl2b.c include/pl2b.h
+out/pl2b.o: pl2/pl2b.c ${HEADERS}
 	@$(LOG) CC pl2/pl2b.c
 	@$(CC) pl2/pl2b.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/pl2b.o
 
+# Build UTIL objects
+UTIL_OBJECTS := out/util.o
+
+.PHONY: util util_prompt
+util: util_prompt ${UTIL_OBJECTS}
+
+util_prompt:
+	@echo Building UTIL
+
+out/util.o: src/util.c ${HEADERS}
+	@$(LOG) CC src/util.c
+	@$(CC) src/util.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/util.o
+
+# Build CCLIB objects
+CCLIB_OBJECTS := out/cc_list.o out/cc_vec.o out/cc_list.o
+
 .PHONY: cclib cclib_prompt
-cclib: prep cclib_prompt out/libcclib.a
+cclib: prep cclib_prompt ${CCLIB_OBJECTS}
 
 cclib_prompt:
 	@echo Building CCLIB
 
-out/libcclib.a: out/cc_list.o out/cc_vec.o
-	@$(LOG) AR out/libcclib.a
-	@ar -rcs out/libcclib.a out/cc_list.o out/cc_vec.o
-	@$(LOG) CHMOD out/libcclib.a
-	@chmod a+x out/libcclib.a
-
-out/cc_list.o: src_ext/cc_list.c include_ext/cc_list.h include_ext/cc_defs.h
+out/cc_list.o: src_ext/cc_list.c ${HEADERS}
 	@$(LOG) CC src_ext/cc_list.c
 	@$(CC) src_ext/cc_list.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/cc_list.o
 
-out/cc_vec.o: src_ext/cc_vec.c include_ext/cc_vec.h include_ext/cc_defs.h
+out/cc_vec.o: src_ext/cc_vec.c ${HEADERS}
 	@$(LOG) CC src_ext/cc_vec.c
 	@$(CC) src_ext/cc_vec.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/cc_vec.o
 
+# Run procedural macro preprocessing
 .PHONY: prep prep_prompt
 prep: \
 	prep_prompt \
@@ -112,6 +155,7 @@ out/:
 	@$(LOG) MKDIR out
 	@mkdir -p out
 
+# Create auxiliary directories
 .PHONY: include_ext_dir include_ext_dir_prompt
 include_ext_dir: include_ext_dir_prompt include_ext/
 
@@ -136,6 +180,7 @@ cc_proc_macro: cclib/cc_proc_macro.c
 	@$(LOG) BUILD cc_proc_macro
 	@$(CC) cclib/cc_proc_macro.c $(WARNINGS) $(CFLAGS) -o cc_proc_macro
 
+# Cleanup
 .PHONY: clean
 clean:
 	rm -rf include_ext

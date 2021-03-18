@@ -2,7 +2,6 @@
 
 #include <assert.h>
 #include <ctype.h>
-#include <dlfcn.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -144,12 +143,11 @@ pl2b_CmdPart pl2b_cmdPart(char *str, _Bool isString) {
 pl2b_Cmd *pl2b_cmd3(pl2b_SourceInfo sourceInfo,
                     pl2b_CmdPart cmd,
                     pl2b_CmdPart args[]) {
-  return pl2b_cmd6(NULL, NULL, NULL, sourceInfo, cmd, args);
+  return pl2b_cmd5(NULL, NULL, sourceInfo, cmd, args);
 }
 
-pl2b_Cmd *pl2b_cmd6(pl2b_Cmd *prev,
+pl2b_Cmd *pl2b_cmd5(pl2b_Cmd *prev,
                     pl2b_Cmd *next,
-                    void *extraData,
                     pl2b_SourceInfo sourceInfo,
                     pl2b_CmdPart cmd,
                     pl2b_CmdPart args[]) {
@@ -171,8 +169,6 @@ pl2b_Cmd *pl2b_cmd6(pl2b_Cmd *prev,
   }
   ret->sourceInfo = sourceInfo;
   ret->cmd = cmd;
-  ret->resolveCache = NULL;
-  ret->extraData = extraData;
   for (uint16_t i = 0; i < argLen; i++) {
     ret->args[i] = args[i];
   }
@@ -272,9 +268,8 @@ static void checkBufferSize(ParseContext *ctx, pl2b_Error *error);
 static void finishLine(ParseContext *ctx, pl2b_Error *error);
 static pl2b_Cmd *cmdFromSlices2(pl2b_SourceInfo sourceInfo,
                                 ParsedPartCache *parts);
-static pl2b_Cmd *cmdFromSlices5(pl2b_Cmd *prev,
+static pl2b_Cmd *cmdFromSlices4(pl2b_Cmd *prev,
                                 pl2b_Cmd *next,
-                                void *extraData,
                                 pl2b_SourceInfo sourceInfo,
                                 ParsedPartCache *parts);
 static void skipWhitespace(ParseContext *ctx);
@@ -474,7 +469,7 @@ static void finishLine(ParseContext *ctx, pl2b_Error *error) {
     ctx->program.commands =
       ctx->listTail = cmdFromSlices2(ctx->sourceInfo, ctx->parseBuffer);
   } else {
-    ctx->listTail = cmdFromSlices5(ctx->listTail, NULL, NULL,
+    ctx->listTail = cmdFromSlices4(ctx->listTail, NULL,
                                    ctx->sourceInfo, ctx->parseBuffer);
   }
   if (ctx->listTail == NULL) {
@@ -487,12 +482,11 @@ static void finishLine(ParseContext *ctx, pl2b_Error *error) {
 
 static pl2b_Cmd *cmdFromSlices2(pl2b_SourceInfo sourceInfo,
                                 ParsedPartCache *parts) {
-  return cmdFromSlices5(NULL, NULL, NULL, sourceInfo, parts);
+  return cmdFromSlices4(NULL, NULL, sourceInfo, parts);
 }
 
-static pl2b_Cmd *cmdFromSlices5(pl2b_Cmd *prev,
+static pl2b_Cmd *cmdFromSlices4(pl2b_Cmd *prev,
                                 pl2b_Cmd *next,
-                                void *extraData,
                                 pl2b_SourceInfo sourceInfo,
                                 ParsedPartCache *parts) {
   uint16_t partCount = 0;
@@ -512,8 +506,6 @@ static pl2b_Cmd *cmdFromSlices5(pl2b_Cmd *prev,
   if (next != NULL) {
     next->prev = ret;
   }
-  ret->extraData = extraData;
-  ret->resolveCache = NULL;
   ret->sourceInfo = sourceInfo;
   ret->cmd = pl2b_cmdPart(sliceIntoCStr(parts[0].slice),
                           parts[0].isString);
@@ -826,7 +818,6 @@ typedef struct st_run_context {
   pl2b_Cmd *curCmd;
   void *userContext;
 
-  void *libHandle;
   pl2b_Language *language;
 } RunContext;
 
@@ -838,9 +829,6 @@ static _Bool cmdHandler(RunContext *context,
 static _Bool checkNextCmdRet(RunContext *context,
                              pl2b_Cmd *nextCmd,
                              pl2b_Error *error);
-static _Bool loadLanguage(RunContext *context,
-                          pl2b_Cmd *cmd,
-                          pl2b_Error *error);
 
 void pl2b_run(pl2b_Program *program, pl2b_Error *error) {
   RunContext *context = createRunContext(program);
@@ -861,7 +849,10 @@ void pl2b_run(pl2b_Program *program, pl2b_Error *error) {
 
 void* pl2b_runWithLanguage(pl2b_Program *program,
                            pl2b_Language *language,
+                           void *userContext,
                            pl2b_Error *error) {
+  assert(language != NULL);
+
   RunContext *context = createRunContext(program);
   if (context == NULL) {
     pl2b_errPrintf(error, PL2B_ERR_MALLOC, pl2b_sourceInfo(NULL, 0),
@@ -870,7 +861,7 @@ void* pl2b_runWithLanguage(pl2b_Program *program,
   }
 
   context->language = language;
-  context->userContext = language->init(error);
+  context->userContext = userContext;
   if (pl2b_isError(error)) {
     destroyRunContext(context);
     return NULL;
@@ -882,7 +873,6 @@ void* pl2b_runWithLanguage(pl2b_Program *program,
     }
   }
 
-  void *userContext = context->userContext;
   context->userContext = NULL;
   destroyRunContext(context);
   return userContext;
@@ -897,30 +887,11 @@ static RunContext *createRunContext(pl2b_Program *program) {
   context->program = program;
   context->curCmd = program->commands;
   context->userContext = NULL;
-  context->libHandle = NULL;
   context->language = NULL;
   return context;
 }
 
 static void destroyRunContext(RunContext *context) {
-  if (context->libHandle != NULL) {
-    if (context->language != NULL) {
-      if (context->language->atExit != NULL) {
-        context->language->atExit(context->userContext);
-      }
-      if (context->language->cmdCleanup != NULL) {
-        for (pl2b_Cmd *cmd = context->program->commands;
-             cmd != NULL;
-             cmd = cmd->next) {
-          context->language->cmdCleanup(cmd->extraData);
-        }
-      }
-      context->language = NULL;
-    }
-    if (dlclose(context->libHandle) != 0) {
-      fprintf(stderr, "[int/e] error invoking dlclose: %s\n", dlerror());
-    }
-  }
   free(context);
 }
 
@@ -932,26 +903,12 @@ static _Bool cmdHandler(RunContext *context,
   }
 
   if (!strcmp(cmd->cmd.str, "language")) {
-    return loadLanguage(context, cmd, error);
+    pl2b_errPrintf(error, PL2B_ERR_NO_LANG, cmd->sourceInfo, NULL,
+                   "No need to use language command in PL2BK, "
+                   "languages are pre-loaded.");
+    return 0;
   } else if (!strcmp(cmd->cmd.str, "abort")) {
     return 0;
-  }
-
-  if (context->language == NULL) {
-    pl2b_errPrintf(error, PL2B_ERR_NO_LANG, cmd->sourceInfo, NULL,
-                   "no language loaded to execute user command");
-    return 1;
-  }
-
-  if (cmd->resolveCache) {
-    pl2b_PCallCmdStub *stub = (pl2b_PCallCmdStub*)cmd->resolveCache;
-    if (stub == NULL) {
-      context->curCmd = cmd->next;
-      return 1;
-    }
-    pl2b_Cmd *nextCmd =
-      stub(context->program, context->userContext, cmd, error);
-    return checkNextCmdRet(context, nextCmd, error);
   }
 
   for (pl2b_PCallCmd *iter = context->language->pCallCmds;
@@ -969,8 +926,6 @@ static _Bool cmdHandler(RunContext *context,
           fprintf(stderr, "[int/w] using deprecated command: %s\n",
                   iter->cmdName);
         }
-
-        cmd->resolveCache = iter->stub;
 
         if (iter->stub == NULL) {
           fprintf(stderr,
@@ -1018,78 +973,5 @@ static _Bool checkNextCmdRet(RunContext *context,
   }
 
   context->curCmd = nextCmd;
-  return 1;
-}
-
-static _Bool loadLanguage(RunContext *context,
-                          pl2b_Cmd *cmd,
-                          pl2b_Error *error) {
-  if (context->language != NULL) {
-    pl2b_errPrintf(error, PL2B_ERR_LOAD_LANG, cmd->sourceInfo, NULL,
-                   "language: another language already loaded");
-    return 0;
-  }
-
-  uint16_t argsLen = pl2b_argsLen(cmd);
-  if (argsLen != 2) {
-    pl2b_errPrintf(error, PL2B_ERR_LOAD_LANG, cmd->sourceInfo, NULL,
-                   "language: expected 2 arguments, got %u",
-                   argsLen - 1);
-    return 0;
-  }
-
-  const char *langId = cmd->args[0].str;
-  pl2b_SemVer langVer = pl2b_parseSemVer(cmd->args[1].str, error);
-  if (pl2b_isError(error)) {
-    return 0;
-  }
-
-  static char buffer[4096] = "./lib";
-  strcat(buffer, langId);
-  strcat(buffer, ".so");
-  context->libHandle = dlopen(buffer, RTLD_NOW);
-  if (context->libHandle == NULL) {
-    char *pl2Home = getenv("PL2B_HOME");
-    if (pl2Home != NULL) {
-      strcpy(buffer, pl2Home);
-      strcat(buffer, "/lib");
-      strcat(buffer, langId);
-      strcat(buffer, ".so");
-      context->libHandle = dlopen(buffer, RTLD_NOW);
-    }
-  }
-
-  if (context->libHandle == NULL) {
-    pl2b_errPrintf(error, PL2B_ERR_LOAD_LANG, cmd->sourceInfo, NULL,
-                   "language: cannot load language library `%s`: %s",
-                   langId, dlerror());
-    return 0;
-  }
-
-  void *loadPtr = dlsym(context->libHandle, "pl2ext_loadLanguage");
-  if (loadPtr == NULL) {
-      pl2b_errPrintf(error, PL2B_ERR_LOAD_LANG, cmd->sourceInfo, NULL,
-                     "language: cannot locate `%s` "
-                     "on library `%s`: %s",
-                     "pl2ext_loadLanguage", langId, dlerror());
-      return 0;
-  }
-
-  pl2b_LoadLanguage *load = (pl2b_LoadLanguage*)loadPtr;
-  context->language = load(langVer, error);
-  if (pl2b_isError(error)) {
-    error->sourceInfo = cmd->sourceInfo;
-    return 0;
-  }
-
-  if (context->language != NULL && context->language->init != NULL) {
-    context->userContext = context->language->init(error);
-    if (pl2b_isError(error)) {
-      error->sourceInfo = cmd->sourceInfo;
-      return 0;
-    }
-  }
-
-  context->curCmd = cmd->next;
   return 1;
 }
