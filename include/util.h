@@ -6,24 +6,12 @@
 #define TP(...)
 #endif
 
-/* Used to indicate lifetime or ownership */
-#ifndef LT
-#define LT(...)
-#endif
-
-#ifndef Owned
-#define Owned(T) T
-#endif
-
-#ifndef Ref
-#define Ref(T) T
-#endif
-
 typedef struct st_string_pair {
-  const char *first;
-  const char *second;
+  char *first;
+  char *second;
 } StringPair;
 
-char *copyString(const char *src);
+char* copyString(const char *src);
+StringPair copyStringPair(StringPair src);
 
 #endif /* UTIL_H */

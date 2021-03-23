@@ -18,12 +18,13 @@ all: \
 # All headers
 HEADERS = include/agno3.h \
 	include/cfglang.h \
+	include/html.h \
 	include/http.h \
 	include/http_base.h \
 	include/pl2b.h \
 	include_ext/cc_defs.h \
 	include_ext/cc_list.h \
-	include_ext/cc_vec.h \
+	include_ext/cc_vec.h
 
 # Build HTTP objects
 HTTP_OBJECTS := out/http.o

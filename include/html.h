@@ -5,55 +5,51 @@
 #include "util.h"
 
 typedef enum e_http_doc_tag_type {
-  HTML_HTML   = 1,  /* <html>     */
-  HTML_TITLE  = 2,  /* <title>    */
-  HTML_SCRIPT = 3,  /* <script>   */
-  HTML_BR     = 4,  /* <br/>      */
-  HTML_HR     = 5,  /* <hr/>      */
-  HTML_H1     = 6,  /* <h1>       */
-  HTML_H2     = 7,  /* <h2>       */
-  HTML_H3     = 8,  /* <h3>       */
-  HTML_H4     = 9,  /* <h4>       */
-  HTML_H5     = 10, /* <h5>       */
-  HTML_H6     = 11, /* <h6>       */
-  HTML_DIV    = 12, /* <div>      */
-  HTML_PARA   = 13, /* <p>        */
-  HTML_SPAN   = 14, /* <span>     */
-  HTML_BOLD   = 15, /* <b>        */
-  HTML_DELETE = 16, /* <del>      */
-  HTML_FORM   = 17, /* <form>     */
-  HTML_INPUT  = 18, /* <input>    */
-  HTML_TEXT   = 19, /* <textarea> */
+  HTML_HTML       = 1,   /* <html>            */
+  HTML_TITLE      = 2,   /* <title>           */
+  HTML_BR         = 3,   /* <br/>             */
+  HTML_HR         = 4,   /* <hr/>             */
+  HTML_H1         = 5,   /* <h1>              */
+  HTML_H2         = 6,   /* <h2>              */
+  HTML_H3         = 7,   /* <h3>              */
+  HTML_H4         = 8,   /* <h4>              */
+  HTML_H5         = 9,   /* <h5>              */
+  HTML_H6         = 10,  /* <h6>              */
+  HTML_DIV        = 11,  /* <div>             */
+  HTML_PARA       = 12,  /* <p>               */
+  HTML_SPAN       = 13,  /* <span>            */
+  HTML_BOLD       = 14,  /* <b>               */
+  HTML_DELETE     = 15,  /* <del>             */
+  HTML_FORM       = 16,  /* <form>            */
+  HTML_INPUT      = 17,  /* <input>           */
+  HTML_TEXT       = 18,  /* <textarea>        */
 
-  HTML_CUSTOM = 100, /* <?????> */
+  HTML_SCRIPT_URL = 198, /* <script url="">   */
+  HTML_SCRIPT     = 199, /* <script></script> */
 
-  HTML_PLAIN  = 101, /* plain text node  */
+  HTML_CUSTOM     = 200, /* <user-defined>    */
+  HTML_PLAIN      = 201, /* plain text node   */
 } HtmlTagType;
 
 const char *htmlTagRepr(HtmlTagType tagType);
 
 typedef struct st_html_doc {
-  // TODO make this structure opaque
-  HtmlTagType tagType;
-  Owned(char*) customTagName;
-
-  ccVec TP(Owned(StringPair)) attrs;
-  union {
-    ccVec TP(HtmlDoc) subDocs;
-    Owned(char*) plain;
-  } data;
+  max_align_t dummy;
 } HtmlDoc;
-
-Owned(char*) htmlDocToString(HtmlDoc *htmlDoc);
 
 HtmlDoc *htmlRootDoc(void);
 HtmlDoc *htmlTag(HtmlTagType tag);
 HtmlDoc *htmlCustomTag(const char *customTag);
 HtmlDoc *htmlPlainNode(const char *plainText);
 
-HtmlTagType getHtmlTagType(const HtmlDoc *doc);
-void addAttribute(HtmlDoc *doc, Ref(StringPair) attrPair);
+HtmlTagType htmlGetTag(const HtmlDoc *doc);
+_Bool htmlCanHaveAttr(const HtmlDoc *doc);
+_Bool htmlCanHaveSubDoc(const HtmlDoc *doc);
+void addAttribute(HtmlDoc *doc, StringPair attrPair);
+void addSubDoc(HtmlDoc *doc, HtmlDoc *subDoc);
 
 void deleteHtml(HtmlDoc *doc);
+
+char* htmlDocToString(HtmlDoc *htmlDoc);
 
 #endif /* HTML_H */

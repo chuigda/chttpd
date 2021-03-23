@@ -14,12 +14,12 @@ typedef void *Flask;
 typedef struct st_http_response_head {
   int code;
   const char *statusText;
-  ccVec TP(Owned, StringPair) headers;
+  ccVec TP(StringPair) headers;
 } HttpResponseHead;
 
 Flask createFlask(HttpRequest request);
-HtmlDoc *extractSNDoc(Flask flask);
 HttpResponseHead extractResponseHead(Flask flask);
+HtmlDoc *extractHtmlDoc(Flask flask);
 void drainFlask(Flask flask);
 
 const pl2b_Language *getAgNO3(void);
