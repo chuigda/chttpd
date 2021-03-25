@@ -13,5 +13,6 @@ typedef struct st_string_pair {
 
 char* copyString(const char *src);
 StringPair copyStringPair(StringPair src);
+_Bool stricmp(const char *lhs, const char *rhs);
 
 #endif /* UTIL_H */

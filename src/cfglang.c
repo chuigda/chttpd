@@ -100,7 +100,7 @@ static pl2b_Cmd *configPort(pl2b_Program *program,
   }
 
   int port = atoi(command->args[0].str);
-  if (port == 0) {
+  if (port <= 0 || port >= 65536) {
     pl2b_errPrintf(error, PL2B_ERR_USER, command->sourceInfo, NULL,
                    "listen-port: invalid port: %s",
                    command->args[0].str);

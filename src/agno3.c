@@ -6,9 +6,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* -------------------------- values and vars ------------------------ */
+
 typedef enum e_value_type {
-  Number,
-  String
+  VT_NUMBER, VT_STRING, VT_LIST, VT_DICT
 } ValueType;
 
 typedef struct st_value {
@@ -16,26 +17,17 @@ typedef struct st_value {
   union {
     int32_t ivalue;
     char *svalue;
+    ccVec TP(Value) lsvalue;
+    ccVec TP(Var) dict;
   } data;
 } Value;
 
 static Value createIntValue(int32_t ivalue);
 static Value createStrValue(char *svalue);
+static Value createListValue(ccVec TP(Value) lsvalue);
+static Value createDictValue(ccVec TP(Var) dict);
+static Value copyValue(Value src);
 static void dropValue(Value value);
-
-static Value createIntValue(int32_t ivalue) {
-  return (Value) { .valueType = Number, .data = { .ivalue = ivalue } };
-}
-
-static Value createStrValue(char *svalue) {
-  return (Value) { .valueType = String, .data = { .svalue = svalue } };
-}
-
-static void dropValue(Value value) {
-  if (value.valueType == String) {
-    free(value.data.svalue);
-  }
-}
 
 typedef struct st_kv_like {
   const char *key;
@@ -48,9 +40,59 @@ typedef struct st_var {
 
 static Var createIntVar(const char *varName, int32_t ivalue);
 static Var createStrVar(const char *varName, char *svalue);
+static Var createListVar(const char *varName, ccVec TP(Value) lsvalue);
+static Var createDictVar(const char *varName, ccVec TP(Var) dict);
 static void varSetInt(Var var, int32_t ivalue);
 static void varSetStr(Var var, char *svalue);
+static void varSetList(Var var, ccVec TP(Value) lsvalue);
+static void varSetDict(Var var, ccVec TP(Value) dict);
 static void dropVar(Var var);
+
+static Value createIntValue(int32_t ivalue) {
+  return (Value) {
+    .valueType = VT_NUMBER, .data = { .ivalue = ivalue }
+  };
+}
+
+static Value createStrValue(char *svalue) {
+  return (Value) {
+    .valueType = VT_STRING, .data = { .svalue = svalue }
+  };
+}
+
+static Value createListValue(ccVec TP(Value) lsvalue) {
+  return (Value) {
+    .valueType = VT_LIST, .data = { .lsvalue = lsvalue }
+  };
+}
+
+static Value createDictValue(ccVec TP(Var) dict) {
+  return (Value) {
+    .valueType = VT_DICT, .data = { .dict = dict }
+  };
+}
+
+static void dropValue(Value value) {
+  switch (value.valueType) {
+    case VT_NUMBER:
+      break;
+    case VT_STRING:
+      free(value.data.svalue);
+      break;
+    case VT_LIST:
+      for (size_t i = 0; i < ccVecLen(&value.data.lsvalue); i++) {
+        Value *v = (Value*)ccVecNth(&value.data.lsvalue, i);
+        dropValue(*v);
+      }
+      break;
+    case VT_DICT:
+      for (size_t i = 0; i < ccVecLen(&value.data.dict); i++) {
+        Var *var = (Var*)ccVecNth(&value.data.dict, i);
+        dropValue(var->value);
+      }
+      break;
+  }
+}
 
 static Var createIntVar(const char *varName, int32_t ivalue) {
   return (Var) { .varName = varName, .value = createIntValue(ivalue) };
@@ -150,6 +192,16 @@ typedef struct st_flask_impl {
   HtmlDoc *rootDoc;
   HtmlDoc *curDoc;
 } FlaskImpl;
+
+static Value evalVar(FlaskImpl *flask,
+                     const char *var,
+                     pl2b_Error *error);
+static int32_t evalVarInt(FlaskImpl *flask,
+                          const char *var,
+                          pl2b_Error *error);
+static char* evalVarStr(FlaskImpl *flask,
+                        const char *var,
+                        pl2b_Error *error);
 
 Flask createFlask(HttpRequest request) {
   FlaskImpl *flaskImpl = (FlaskImpl*)malloc(sizeof(FlaskImpl));
@@ -270,4 +322,94 @@ const pl2b_Language *getAgNO3(void) {
   };
 
   return &language;
+}
+
+static pl2b_Cmd* setStatus(pl2b_Program *program,
+                           void *context,
+                           pl2b_Cmd *command,
+                           pl2b_Error *error) {
+  (void)program;
+
+  if (pl2b_argsLen(command) != 2) {
+    pl2b_errPrintf(error, PL2B_ERR_USER, command->sourceInfo, NULL,
+                   "status: expecting 2 arguments");
+    return NULL;
+  }
+
+  FlaskImpl *flask = (FlaskImpl*)context;
+
+  const char *statusCodeStr = command->args[0].str;
+  const char *statusText = command->args[1].str;
+
+  int statusCode = atoi(statusCodeStr);
+  if (statusCode == 0) {
+    pl2b_errPrintf(error, PL2B_ERR_USER, command->sourceInfo,
+                   "status: invalid status code: %s",
+                   statusCodeStr);
+    return NULL;
+  }
+
+  flask->code = statusCode;
+  flask->statusText = statusText;
+
+  return command->next;
+}
+
+static pl2b_Cmd* setHeader(pl2b_Program *program,
+                           void *context,
+                           pl2b_Cmd *command,
+                           pl2b_Error *error) {
+  (void)program;
+
+  if (pl2b_argsLen(command) != 2) {
+    pl2b_errPrintf(error, PL2B_ERR_USER, command->sourceInfo, NULL,
+                   "header: expecting 2 arguments");
+    return NULL;
+  }
+
+  FlaskImpl *flask = (FlaskImpl*)context;
+
+  const char *keyStr = command->args[0].str;
+  const char *valueStr = command->args[1].str;
+
+  if (stricmp(keyStr, "Content-Length")) {
+    pl2b_errPrintf(error, PL2B_ERR_USER, command->sourceInfo, NULL,
+                   "header: cannot set `Content-Length` manually");
+    return NULL;
+  }
+
+  char *key;
+  char *value;
+
+  key = keyStr[0] == '$'
+    ? evalVarStr(flask, keyStr + 1, error)
+    : copyString(keyStr);
+  if (pl2b_isError(error)) {
+    error->sourceInfo = command->sourceInfo;
+    return NULL;
+  }
+
+  value = valueStr[0] == '$'
+    ? evalVarStr(flask, valueStr + 1, error)
+    : copyString(valueStr);
+  if (pl2b_isError(error)) {
+    error->sourceInfo = command->sourceInfo;
+    return NULL;
+  }
+
+  for (size_t i = 0; i < ccVecLen(&flask->headers); i++) {
+    StringPair *pair = (StringPair*)ccVecNth(&flask->headers, i);
+    if (stricmp(pair->first, key)) {
+      pl2b_errPrintf(error, PL2B_ERR_USER, command->sourceInfo, NULL,
+                     "header: duplicate header: %s", key);
+      free(key);
+      free(value);
+      return NULL;
+    }
+  }
+
+  StringPair p = (StringPair) { key, value };
+  ccVecPushBack(&flask->headers, &p);
+
+  return command->next;
 }
