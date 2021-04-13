@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define CC_LIST CCTY(cc_list)
 #define CC_LIST_ITER CCTY(cc_list_iter)

@@ -9,7 +9,7 @@
 /* -------------------------- values and vars ------------------------ */
 
 typedef enum e_value_type {
-  VT_NUMBER, VT_STRING, VT_LIST, VT_DICT
+  VT_NUMBER, VT_STRING, VT_LIST, VT_DICT, VT_NULL
 } ValueType;
 
 typedef struct st_value {
@@ -26,8 +26,12 @@ static Value createIntValue(int32_t ivalue);
 static Value createStrValue(char *svalue);
 static Value createListValue(ccVec TP(Value) lsvalue);
 static Value createDictValue(ccVec TP(Var) dict);
+static Value createNullValue(void);
 static Value copyValue(Value src);
 static void dropValue(Value value);
+
+static Value lookupDict(Value dict, const char *key);
+static Value listNth(Value list, int index);
 
 typedef struct st_kv_like {
   const char *key;
@@ -69,6 +73,12 @@ static Value createListValue(ccVec TP(Value) lsvalue) {
 static Value createDictValue(ccVec TP(Var) dict) {
   return (Value) {
     .valueType = VT_DICT, .data = { .dict = dict }
+  };
+}
+
+static Value createNullValue(void) {
+  return (Value) {
+    .valueType = VT_NULL, .data = { .ivalue = 0 }
   };
 }
 
@@ -114,6 +124,27 @@ static void varSetStr(Var var, char *svalue) {
 
 static void dropVar(Var var) {
   dropValue(var.value);
+}
+
+static Value lookupDict(Value dict, const char *key) {
+  assert(dict.valueType == VT_DICT);
+
+  size_t dictSize = ccVecLen(&dict.data.dict);
+  for (size_t i = 0; i < dictSize; i++) {
+    Var *dictItem = ccVecNth(&dict.data.dict, i);
+    if (!strcmp(dictItem->varName, key)) {
+      return dictItem->value;
+    }
+  }
+  return createNullValue();
+}
+
+static Value listNth(Value list, int index) {
+  assert(list.valueType == VT_LIST);
+
+  size_t listSize = ccVecLen(&list.data.list);
+  // TODO
+  goto sleep;
 }
 
 typedef struct st_function {
@@ -196,12 +227,72 @@ typedef struct st_flask_impl {
 static Value evalVar(FlaskImpl *flask,
                      const char *var,
                      pl2b_Error *error);
-static int32_t evalVarInt(FlaskImpl *flask,
-                          const char *var,
-                          pl2b_Error *error);
-static char* evalVarStr(FlaskImpl *flask,
-                        const char *var,
+static Value evalVarStr(FlaskImpl *flask,
+                        const char *varStr,
                         pl2b_Error *error);
+static const char* copyVarPart(char *destBuffer,
+                               const char *varStr);
+
+static Value evalVar(FlaskImpl *flask,
+                     const char *var,
+                     pl2b_Error *error) {
+  VarContextBase *scope = flask->curVarContext;
+
+  while (scope != NULL) {
+    size_t varCount = ccVecSize(&scope->vars);
+    for (size_t i = 0; i < varCount; i++) {
+      Var *var = (Var*)ccVecNth(&scope->vars, i);
+      if (!strcmp(var->varName, var)) {
+        return var->value;
+      }
+    }
+  }
+  return createNullValue();
+}
+
+static Value evalVarStr(FlaskImpl *flask,
+                        const char *varStr,
+                        pl2b_Error *error) {
+  VarContextBase *scope = flask->curVarContext;
+
+  size_t varStrLen = strlen(varStr);
+  char buffer[varStrLen + 1];
+
+  const char *afterFirstPart = copyVarPart(buffer, varStr);
+  Value rootValue = evalVar(flask, buffer, error);
+  if (pl2b_isError(error)) {
+    return createNullValue();
+  }
+
+  if (*afterFirstPart == '\0') {
+    return rootValue;
+  }
+
+  while (*afterFirstPart != '\0') {
+    afterFirstPart = copyVarPart(buffer, afterFirstPart);
+    if (rootValue.valueType == VT_DICT) {
+      // TODO
+    } else if (rootValue.valueType == VT_LIST) {
+      // TODO
+    } else {
+      return createNullValue();
+    }
+  }
+}
+
+static const char *copyVarPart(char *destBuffer,
+                               const char *varStr) {
+  assert(varStr[0] != '\0' && varStr[0] != '/');
+
+  while (*varStr != '/' && *varStr != '\0') {
+    *destBuffer = *varStr;
+    destBuffer++;
+    varStr++;
+  }
+
+  *destBuffer = '\0';
+  return varStr;
+}
 
 Flask createFlask(HttpRequest request) {
   FlaskImpl *flaskImpl = (FlaskImpl*)malloc(sizeof(FlaskImpl));
@@ -381,6 +472,7 @@ static pl2b_Cmd* setHeader(pl2b_Program *program,
   char *key;
   char *value;
 
+  // TODO
   key = keyStr[0] == '$'
     ? evalVarStr(flask, keyStr + 1, error)
     : copyString(keyStr);
@@ -389,6 +481,7 @@ static pl2b_Cmd* setHeader(pl2b_Program *program,
     return NULL;
   }
 
+  // TODO
   value = valueStr[0] == '$'
     ? evalVarStr(flask, valueStr + 1, error)
     : copyString(valueStr);
