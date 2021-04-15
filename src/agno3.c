@@ -3,6 +3,7 @@
 #include "html.h"
 
 #include <assert.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -131,7 +132,7 @@ static Value lookupDict(Value dict, const char *key) {
 
   size_t dictSize = ccVecLen(&dict.data.dict);
   for (size_t i = 0; i < dictSize; i++) {
-    Var *dictItem = ccVecNth(&dict.data.dict, i);
+    Var *dictItem = (Var*)ccVecNth(&dict.data.dict, i);
     if (!strcmp(dictItem->varName, key)) {
       return dictItem->value;
     }
@@ -142,9 +143,10 @@ static Value lookupDict(Value dict, const char *key) {
 static Value listNth(Value list, int index) {
   assert(list.valueType == VT_LIST);
 
-  size_t listSize = ccVecLen(&list.data.list);
-  // TODO
-  goto sleep;
+  size_t listSize = ccVecLen(&list.data.lsvalue);
+  if (abs(index) > listSize) {
+    return createNullValue();
+  }
 }
 
 typedef struct st_function {
