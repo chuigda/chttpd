@@ -64,7 +64,11 @@ void chttpd_log(LogLevel logLevel,
     buffer = (char*)malloc(requiredSize);
     bufferSize = requiredSize;
   }
+
+  va_start(va, fmt);
   vsprintf(buffer, fmt, va);
+  va_end(va);
+
   fprintf(stderr,
           "\033[%sm [ %s %s:%s:%d ] %s \033[0m\n",
           log_level_controls[logLevel],

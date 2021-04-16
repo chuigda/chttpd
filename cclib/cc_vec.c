@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -11,8 +12,9 @@
 static void cc_vec_grow(CC_VEC *vec) {
     assert(vec->end == vec->usage);
     size_t length = CC_VPTR_DIFF(vec->end, vec->start);
-    size_t target = (length == 0) ? CC_VEC_INIT_SIZE : length * 2;
-    void * start = realloc (vec->start, length);
+    size_t target =
+        (length == 0) ? CC_VEC_INIT_SIZE * vec->elem_size : length * 2;
+    void * start = realloc (vec->start, target);
     assert(start != NULL);
     vec->start = start;
     vec->usage = CC_VPTR_ADD(start, length);
@@ -20,17 +22,6 @@ static void cc_vec_grow(CC_VEC *vec) {
 }
 
 void
-CCFN(cc_vec_shrink) (CC_VEC *vec) {
-    size_t length = CC_VPTR_DIFF(vec->end,   vec->start);
-    size_t size   = CC_VPTR_DIFF(vec->usage, vec->start);
-    void * start = realloc (vec, length);
-    assert(start != NULL);
-    vec->start = start;
-    vec->usage = CC_VPTR_ADD(start, size);
-    vec->end   = CC_VPTR_ADD(start, size);
-}
-
-void 
 CCFN(cc_vec_init) (CC_VEC *vec, size_t elem_size) {
     assert(elem_size > 0);
     vec->start     = NULL;
@@ -53,7 +44,7 @@ CCFN(cc_vec_push_back) (CC_VEC *vec, const void *data) {
     assert(data != NULL);
     assert(vec != NULL);
     if (vec->usage == vec->end) cc_vec_grow(vec);
-    assert(vec->usage != vec->end);
+    assert(vec->usage < vec->end);
     memcpy(vec->usage, data, vec->elem_size);
     vec->usage = CC_VPTR_ADD(vec->usage, vec->elem_size);
 };
@@ -63,7 +54,7 @@ CCFN(cc_vec_push_front) (CC_VEC *vec, const void *data) {
     assert(data != NULL);
     assert(vec != NULL);
     if (vec->usage == vec->end) cc_vec_grow(vec);
-    assert(vec->usage != vec->end);
+    assert(vec->usage < vec->end);
     memmove(CC_VPTR_ADD(vec->start, vec->elem_size),
                vec->start,
                CC_VPTR_DIFF(vec->usage, vec->start));
