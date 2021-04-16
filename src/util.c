@@ -14,6 +14,10 @@ char *copyString(const char *src) {
   return ret;
 }
 
+StringPair makeStringPair(const char *first, const char *second) {
+  return (StringPair) { copyString(first), copyString(second) };
+}
+
 _Bool stricmp(const char *lhs, const char *rhs) {
   while (*lhs != '\0' && *lhs != '\0') {
     if (tolower(*lhs) != tolower(*rhs)) {
@@ -49,13 +53,14 @@ void chttpd_log(LogLevel logLevel,
                 ...) {
   static _Thread_local char *buffer = NULL;
   static _Thread_local size_t bufferSize = 0;
-  
+
   va_list va;
   va_start(va, fmt);
   size_t requiredSize = vsnprintf(NULL, 0, fmt, va) + 1;
   va_end(va);
 
   if (requiredSize > bufferSize) {
+    free(buffer);
     buffer = (char*)malloc(requiredSize);
     bufferSize = requiredSize;
   }

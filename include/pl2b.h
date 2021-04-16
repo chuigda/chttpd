@@ -127,7 +127,6 @@ pl2b_Program pl2b_parse(char *source,
                         uint16_t parseBufferSize,
                         pl2b_Error *error);
 void pl2b_dropProgram(pl2b_Program *program);
-void pl2b_debugPrintProgram(const pl2b_Program *program);
 
 /*** -------------------- Semantic-ver parsing  -------------------- ***/
 

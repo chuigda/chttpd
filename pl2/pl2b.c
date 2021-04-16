@@ -1,4 +1,5 @@
 #include "pl2b.h"
+#include "util.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -199,29 +200,6 @@ void pl2b_dropProgram(pl2b_Program *program) {
     free(iter);
     iter = next;
   }
-}
-
-void pl2b_debugPrintProgram(const pl2b_Program *program) {
-  fprintf(stderr, "program commands\n");
-  pl2b_Cmd *cmd = program->commands;
-  while (cmd != NULL) {
-    if (cmd->cmd.isString) {
-      fprintf(stderr, "\t\"%s\" [", cmd->cmd.str);
-    } else {
-      fprintf(stderr, "\t%s [", cmd->cmd.str);
-    }
-    for (uint16_t i = 0; !PL2B_EMPTY_PART(cmd->args[i]); i++) {
-      pl2b_CmdPart arg = cmd->args[i];
-      if (arg.isString) {
-        fprintf(stderr, "\"%s\", ", arg.str);
-      } else {
-        fprintf(stderr, "`%s`, ", arg.str);
-      }
-    }
-    fprintf(stderr, "\b\b]\n");
-    cmd = cmd->next;
-  }
-  fprintf(stderr, "end program commands\n");
 }
 
 /*** ----------------- Implementation of pl2b_parse ---------------- ***/
@@ -923,14 +901,12 @@ static _Bool cmdHandler(RunContext *context,
         /* Do nothing if so */
       } else {
         if (iter->deprecated) {
-          fprintf(stderr, "[int/w] using deprecated command: %s\n",
-                  iter->cmdName);
+          LOG_WARN("using deprecated command: %s\n", iter->cmdName);
         }
 
         if (iter->stub == NULL) {
-          fprintf(stderr,
-                  "[int/w] entry for command %s exists but NULL\n",
-                  cmd->cmd.str);
+          LOG_WARN("entry for command %s exists but NULL\n",
+                   cmd->cmd.str);
           context->curCmd = cmd->next;
           return 1;
         }

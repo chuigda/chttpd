@@ -12,6 +12,7 @@ typedef struct st_string_pair {
 } StringPair;
 
 char* copyString(const char *src);
+StringPair makeStringPair(const char *first, const char *second);
 StringPair copyStringPair(StringPair src);
 _Bool stricmp(const char *lhs, const char *rhs);
 
@@ -32,5 +33,11 @@ void chttpd_log(LogLevel logLevel,
 
 #define LOG(LL, FMT, ...) \
   { chttpd_log(LL, __FILE__, __LINE__, __func__, FMT, ##__VA_ARGS__); }
+
+#define LOG_DBG(FMT, ...) { LOG(LL_DEBUG, FMT, ##__VA_ARGS__); }
+#define LOG_INFO(FMT, ...) { LOG(LL_INFO, FMT, ##__VA_ARGS__); }
+#define LOG_WARN(FMT, ...) { LOG(LL_WARN, FMT, ##__VA_ARGS__); }
+#define LOG_ERR(FMT, ...) { LOG(LL_ERROR, FMT, ##__VA_ARGS__); }
+#define LOG_FATAL(FMT, ...) { LOG(LL_FATAL, FMT, ##__VA_ARGS__); }
 
 #endif /* UTIL_H */

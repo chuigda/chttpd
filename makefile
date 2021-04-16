@@ -1,5 +1,5 @@
-CFLAGS ?= -O2
-WARNINGS := -Wall -Wextra -Wc++-compat
+CFLAGS ?= -O0 -g
+WARNINGS := -Wall -Wextra -Wc++-compat -Wno-unused-function
 LOG := sh -c 'printf \\t$$0\\t$$1\\n'
 INCLUDES := -I include -I include_ext
 
@@ -96,7 +96,7 @@ out/util.o: src/util.c ${HEADERS}
 	@$(CC) src/util.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/util.o
 
 # Build CCLIB objects
-CCLIB_OBJECTS := out/cc_list.o out/cc_vec.o out/cc_list.o
+CCLIB_OBJECTS := out/cc_vec.o out/cc_list.o
 
 .PHONY: cclib cclib_prompt
 cclib: prep cclib_prompt ${CCLIB_OBJECTS}
@@ -106,11 +106,13 @@ cclib_prompt:
 
 out/cc_list.o: src_ext/cc_list.c ${HEADERS}
 	@$(LOG) CC src_ext/cc_list.c
-	@$(CC) src_ext/cc_list.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/cc_list.o
+	@$(CC) src_ext/cc_list.c \
+		$(INCLUDES) $(WARNINGS) $(CFLAGS) -c -fPIC -o out/cc_list.o
 
 out/cc_vec.o: src_ext/cc_vec.c ${HEADERS}
 	@$(LOG) CC src_ext/cc_vec.c
-	@$(CC) src_ext/cc_vec.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/cc_vec.o
+	@$(CC) src_ext/cc_vec.c \
+		$(INCLUDES) $(WARNINGS) $(CFLAGS) -c -fPIC -o out/cc_vec.o
 
 # Run procedural macro preprocessing
 .PHONY: prep prep_prompt
@@ -188,3 +190,39 @@ clean:
 	rm -rf src_ext
 	rm -rf out
 	rm -f cc_proc_macro
+
+# Unit testing
+.PHONY: test test_prompt
+test: \
+	all \
+	test_prompt \
+	test_agno3
+
+test_prompt:
+	@echo Running unit-tests
+
+# Test case TEST_AGNO3
+.PHONY: test_agno3 test_agno3_prompt
+test_agno3: \
+		test_agno3_prompt \
+		cclib util pl2 agno3 \
+		test/test_agno3.c	
+	@$(LOG) CC test/test_agno3.c
+	@$(CC) test/test_agno3.c \
+		$(INCLUDES) \
+		$(WARNINGS) \
+		$(CFLAGS) \
+		-c -o out/test_agno3.o
+	@$(LOG) BUILD out/test_agno3
+	@$(CC) \
+		${CCLIB_OBJECTS} \
+		${UTIL_OBJECTS} \
+		${PL2_OBJECTS} \
+		${AGNO3_OBJECTS} \
+		out/test_agno3.o \
+		-o out/test_agno3
+	@$(LOG) RUN out/test_agno3
+	@out/test_agno3
+
+test_agno3_prompt:
+	@echo Testing AgNO3 library

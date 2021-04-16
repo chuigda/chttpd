@@ -6,15 +6,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if CCLIB_DS_VEC != CC_FEAT_DISABLED
-
 #define CC_VEC CCTY(cc_vec)
 
 static void cc_vec_grow(CC_VEC *vec) {
     assert(vec->end == vec->usage);
     size_t length = CC_VPTR_DIFF(vec->end, vec->start);
     size_t target = (length == 0) ? CC_VEC_INIT_SIZE : length * 2;
-    void * start = realloc (vec->start, length, target);
+    void * start = realloc (vec->start, length);
     assert(start != NULL);
     vec->start = start;
     vec->usage = CC_VPTR_ADD(start, length);
@@ -25,7 +23,7 @@ void
 CCFN(cc_vec_shrink) (CC_VEC *vec) {
     size_t length = CC_VPTR_DIFF(vec->end,   vec->start);
     size_t size   = CC_VPTR_DIFF(vec->usage, vec->start);
-    void * start = realloc (vec, length, size);
+    void * start = realloc (vec, length);
     assert(start != NULL);
     vec->start = start;
     vec->usage = CC_VPTR_ADD(start, size);
@@ -158,6 +156,10 @@ CCFN(cc_vec_find_in) (const CCTY(cc_vec) *vec,
     if (last < 0) {
         last = CCFN(cc_vec_len) (vec);
     }
+    (void)first;
+    (void)last;
+    (void)data;
+    (void)cmp;
     return -1;
 }
 
@@ -196,5 +198,3 @@ _Bool
 CCFN(cc_vec_empty) (const CC_VEC *vec) {
     return vec->usage == vec->start;
 }
-
-#endif

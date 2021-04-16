@@ -102,6 +102,8 @@ static void dropValue(Value value) {
         dropValue(var->value);
       }
       break;
+    case VT_NULL:
+      break;
   }
 }
 
@@ -243,9 +245,9 @@ static Value evalVar(FlaskImpl *flask,
   while (scope != NULL) {
     size_t varCount = ccVecSize(&scope->vars);
     for (size_t i = 0; i < varCount; i++) {
-      Var *var = (Var*)ccVecNth(&scope->vars, i);
-      if (!strcmp(var->varName, var)) {
-        return var->value;
+      Var *foundVar = (Var*)ccVecNth(&scope->vars, i);
+      if (!strcmp(foundVar->varName, var)) {
+        return foundVar->value;
       }
     }
   }
@@ -475,6 +477,7 @@ static pl2b_Cmd* setHeader(pl2b_Program *program,
   char *value;
 
   // TODO
+  /*
   key = keyStr[0] == '$'
     ? evalVarStr(flask, keyStr + 1, error)
     : copyString(keyStr);
@@ -482,8 +485,10 @@ static pl2b_Cmd* setHeader(pl2b_Program *program,
     error->sourceInfo = command->sourceInfo;
     return NULL;
   }
+  */
 
   // TODO
+  /*
   value = valueStr[0] == '$'
     ? evalVarStr(flask, valueStr + 1, error)
     : copyString(valueStr);
@@ -491,6 +496,7 @@ static pl2b_Cmd* setHeader(pl2b_Program *program,
     error->sourceInfo = command->sourceInfo;
     return NULL;
   }
+  */
 
   for (size_t i = 0; i < ccVecLen(&flask->headers); i++) {
     StringPair *pair = (StringPair*)ccVecNth(&flask->headers, i);
@@ -507,4 +513,160 @@ static pl2b_Cmd* setHeader(pl2b_Program *program,
   ccVecPushBack(&flask->headers, &p);
 
   return command->next;
+}
+
+static pl2b_Cmd *handleScript(pl2b_Program *program,
+                              void *context,
+                              pl2b_Cmd *command,
+                              pl2b_Error *error) {
+  // TODO
+  (void)program;
+  (void)context;
+  (void)command;
+  (void)error;
+  return NULL;
+}
+
+static _Bool routeOpenTag(pl2b_CmdPart cmdPart)  {
+  // TODO
+  (void)cmdPart;
+  return 0;
+}
+
+static _Bool routeCloseTag(pl2b_CmdPart cmdPart) {
+  // TODO
+  (void)cmdPart;
+  return 0;
+}
+
+static pl2b_Cmd *handleOpenTag(pl2b_Program *program,
+                               void *context,
+                               pl2b_Cmd *command,
+                               pl2b_Error *error) {
+  // TODO
+  (void)program;
+  (void)context;
+  (void)command;
+  (void)error;
+  return NULL;
+}
+
+static pl2b_Cmd *handleCloseTag(pl2b_Program *program,
+                                void *context,
+                                pl2b_Cmd *command,
+                                pl2b_Error *error) {
+  // TODO
+  (void)program;
+  (void)context;
+  (void)command;
+  (void)error;
+  return NULL;
+}
+
+static pl2b_Cmd *handleSet(pl2b_Program *program,
+                           void *context,
+                           pl2b_Cmd *command,
+                           pl2b_Error *error) {
+  // TODO
+  (void)program;
+  (void)context;
+  (void)command;
+  (void)error;
+  return NULL;
+}
+
+static pl2b_Cmd *handleCall(pl2b_Program *program,
+                            void *context,
+                            pl2b_Cmd *command,
+                            pl2b_Error *error) {
+  // TODO
+  (void)program;
+  (void)context;
+  (void)command;
+  (void)error;
+  return NULL;
+}
+
+static pl2b_Cmd *handleIf(pl2b_Program *program,
+                          void *context,
+                          pl2b_Cmd *command,
+                          pl2b_Error *error) {
+  // TODO
+  (void)program;
+  (void)context;
+  (void)command;
+  (void)error;
+  return NULL;
+}
+
+static pl2b_Cmd *handleWhile(pl2b_Program *program,
+                             void *context,
+                             pl2b_Cmd *command,
+                             pl2b_Error *error) {
+  // TODO
+  (void)program;
+  (void)context;
+  (void)command;
+  (void)error;
+  return NULL;
+}
+
+static pl2b_Cmd *handleBreak(pl2b_Program *program,
+                             void *context,
+                             pl2b_Cmd *command,
+                             pl2b_Error *error) {
+  // TODO
+  (void)program;
+  (void)context;
+  (void)command;
+  (void)error;
+  return NULL;
+}
+
+static pl2b_Cmd *handleProc(pl2b_Program *program,
+                            void *context,
+                            pl2b_Cmd *command,
+                            pl2b_Error *error) {
+  // TODO
+  (void)program;
+  (void)context;
+  (void)command;
+  (void)error;
+  return NULL;
+}
+
+static pl2b_Cmd *handleEnd(pl2b_Program *program,
+                           void *context,
+                           pl2b_Cmd *command,
+                           pl2b_Error *error) {
+  // TODO
+  (void)program;
+  (void)context;
+  (void)command;
+  (void)error;
+  return NULL;
+}
+
+static pl2b_Cmd *handleAbort(pl2b_Program *program,
+                             void *context,
+                             pl2b_Cmd *command,
+                             pl2b_Error *error) {
+  // TODO
+  (void)program;
+  (void)context;
+  (void)command;
+  (void)error;
+  return NULL;
+}
+
+static pl2b_Cmd *maybeHandleCustomTag(pl2b_Program *program,
+                                      void *context,
+                                      pl2b_Cmd *command,
+                                      pl2b_Error *error) {
+  // TODO
+  (void)program;
+  (void)context;
+  (void)command;
+  (void)error;
+  return NULL;
 }
