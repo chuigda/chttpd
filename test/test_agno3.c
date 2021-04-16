@@ -87,7 +87,7 @@ static void test_html_print(void) {
 
   VK_TEST_SECTION_END(TEST_NAME)
 
-  LOG_WARN("Memory was not collected in the %s test.", TEST_NAME);
+  deleteHtml(rootDoc);
 }
 
 int main() {

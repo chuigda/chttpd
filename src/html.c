@@ -190,8 +190,77 @@ void htmlAddSubDoc(HtmlDoc *doc, HtmlDoc *subDoc) {
 }
 
 void deleteHtml(HtmlDoc *doc) {
-  // TODO
-  (void)doc;
+  HtmlTagType tagType = htmlGetTag(doc);
+  switch (tagType) {
+    case HTML_BR:
+    case HTML_HR:
+    case HTML_META:
+    case HTML_HTML:
+    case HTML_HEAD:
+    case HTML_BODY:
+    case HTML_TITLE:
+    case HTML_H1:
+    case HTML_H2:
+    case HTML_H3:
+    case HTML_H4:
+    case HTML_H5:
+    case HTML_H6:
+    case HTML_DIV:
+    case HTML_PARA:
+    case HTML_SPAN:
+    case HTML_BOLD:
+    case HTML_DELETE:
+    case HTML_FORM:
+    case HTML_INPUT:
+    case HTML_TEXT:
+      {
+        HtmlDocImpl *normal = (HtmlDocImpl*)doc;
+        size_t attrSize = ccVecLen(&normal->attrs);
+        for (size_t i = 0; i < attrSize; i++) {
+          StringPair sp = *(StringPair*)ccVecNth(&normal->attrs, i);
+          dropStringPair(sp);
+        }
+        ccVecDestroy(&normal->attrs);
+
+        size_t subDocSize = ccVecLen(&normal->subDocs);
+        for (size_t i = 0; i < subDocSize; i++) {
+          HtmlDoc *subDoc = *(HtmlDoc**)ccVecNth(&normal->subDocs, i);
+          deleteHtml(subDoc);
+        }
+        ccVecDestroy(&normal->subDocs);
+        break;
+      }
+
+    case HTML_SCRIPT_URL:
+    case HTML_SCRIPT:
+    case HTML_PLAIN:
+      {
+        HtmlPlainDocImpl *plain = (HtmlPlainDocImpl*)doc;
+        free(plain->plain);
+        break;
+      }
+
+    case HTML_CUSTOM:
+      {
+        HtmlCustomDocImpl *custom = (HtmlCustomDocImpl*)doc;
+        free(custom->customTagName);
+        size_t attrSize = ccVecLen(&custom->attrs);
+        for (size_t i = 0; i < attrSize; i++) {
+          StringPair sp = *(StringPair*)ccVecNth(&custom->attrs, i);
+          dropStringPair(sp);
+        }
+        ccVecDestroy(&custom->attrs);
+
+        size_t subDocSize = ccVecLen(&custom->subDocs);
+        for (size_t i = 0; i < subDocSize; i++) {
+          HtmlDoc *subDoc = *(HtmlDoc**)ccVecNth(&custom->subDocs, i);
+          deleteHtml(subDoc);
+        }
+        ccVecDestroy(&custom->subDocs);
+        break;
+      }
+  }
+  free(doc);
 }
 
 static int printHtmlAttrs(FILE *fp, ccVec TP(StringPair) *attrs);
@@ -232,8 +301,8 @@ static _Bool needLineBreak(HtmlTagType tagType) {
 }
 
 static int printHtmlImpl(FILE *fp, HtmlDoc *doc, _Bool lineBreak) {
-  HtmlDocBase *docBase = (HtmlDocBase*)doc;
-  switch (docBase->tagType) {
+  HtmlTagType tagType = htmlGetTag(doc);
+  switch (tagType) {
     case HTML_BR:
       return printHtmlLeafDoc(fp, (HtmlDocImpl*)doc, "br");
     case HTML_HR:

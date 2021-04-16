@@ -18,6 +18,11 @@ StringPair makeStringPair(const char *first, const char *second) {
   return (StringPair) { copyString(first), copyString(second) };
 }
 
+void dropStringPair(StringPair pair) {
+  free(pair.first);
+  free(pair.second);
+}
+
 _Bool stricmp(const char *lhs, const char *rhs) {
   while (*lhs != '\0' && *lhs != '\0') {
     if (tolower(*lhs) != tolower(*rhs)) {

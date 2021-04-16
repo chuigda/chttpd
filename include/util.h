@@ -14,6 +14,8 @@ typedef struct st_string_pair {
 char* copyString(const char *src);
 StringPair makeStringPair(const char *first, const char *second);
 StringPair copyStringPair(StringPair src);
+void dropStringPair(StringPair pair);
+
 _Bool stricmp(const char *lhs, const char *rhs);
 
 typedef enum e_log_level {
