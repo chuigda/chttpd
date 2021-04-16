@@ -116,6 +116,14 @@ HtmlDoc *htmlPlainNode(const char *plainText) {
   return (HtmlDoc*)ret;
 }
 
+HtmlDoc *htmlScriptUrlNode(const char *url) {
+  HtmlPlainDocImpl *ret =
+    (HtmlPlainDocImpl*)malloc(sizeof(HtmlPlainDocImpl));
+  ret->tagType = HTML_SCRIPT_URL;
+  ret->plain = copyString(url);
+  return (HtmlDoc*)ret;
+}
+
 HtmlDoc *htmlScriptNode(const char *scriptText) {
   HtmlPlainDocImpl *ret =
     (HtmlPlainDocImpl*)malloc(sizeof(HtmlPlainDocImpl));
@@ -187,7 +195,7 @@ void deleteHtml(HtmlDoc *doc) {
 }
 
 static int printHtmlAttrs(FILE *fp, ccVec TP(StringPair) *attrs);
-static int printHtmlDoc(FILE *fp, 
+static int printHtmlDoc(FILE *fp,
                         HtmlDocImpl *doc,
                         const char *tagName,
                         _Bool lineBreak);
@@ -232,9 +240,11 @@ static int printHtmlImpl(FILE *fp, HtmlDoc *doc, _Bool lineBreak) {
       return printHtmlLeafDoc(fp, (HtmlDocImpl*)doc, "hr");
     case HTML_META:
       return printHtmlLeafDoc(fp, (HtmlDocImpl*)doc, "meta");
-    
+
     case HTML_HTML:
       return printHtmlDoc(fp, (HtmlDocImpl*)doc, "html", lineBreak);
+    case HTML_HEAD:
+      return printHtmlDoc(fp, (HtmlDocImpl*)doc, "head", lineBreak);
     case HTML_BODY:
       return printHtmlDoc(fp, (HtmlDocImpl*)doc, "body", lineBreak);
     case HTML_TITLE:
@@ -266,21 +276,26 @@ static int printHtmlImpl(FILE *fp, HtmlDoc *doc, _Bool lineBreak) {
 
     case HTML_FORM:
       return printHtmlDoc(fp, (HtmlDocImpl*)doc, "form", lineBreak);
-      
+
     case HTML_INPUT:
       return printHtmlDoc(fp, (HtmlDocImpl*)doc, "input", lineBreak);
 
     case HTML_TEXT:
       return printHtmlDoc(fp, (HtmlDocImpl*)doc, "text", lineBreak);
 
-    case HTML_SCRIPT_URL: assert(0 && "unimplemented"); return -1;
-    case HTML_SCRIPT: 
+    case HTML_SCRIPT_URL:
+      {
+        HtmlPlainDocImpl *plain = (HtmlPlainDocImpl*)doc;
+        return fprintf(fp, "<script src=\"%s\"></script>", plain->plain);
+      }
+
+    case HTML_SCRIPT:
       {
         HtmlPlainDocImpl *plain = (HtmlPlainDocImpl*)doc;
         return fprintf(fp, "<script>\n%s\n</script>", plain->plain);
       }
 
-    case HTML_CUSTOM: 
+    case HTML_CUSTOM:
       return printHtmlCustomDoc(fp, (HtmlCustomDocImpl*)doc, lineBreak);
 
     case HTML_PLAIN:
@@ -289,13 +304,13 @@ static int printHtmlImpl(FILE *fp, HtmlDoc *doc, _Bool lineBreak) {
         return fprintf(fp, "%s", plain->plain);
       }
   }
-  
+
   return -1;
 }
 
 static int printHtmlAttrs(FILE *fp, ccVec TP(StringPair) *attrs) {
   int ret = 0;
-  
+
   size_t attrLen = ccVecLen(attrs);
   for (size_t i = 0; i < attrLen; i++) {
     StringPair *attr = (StringPair*)ccVecNth(attrs, i);
@@ -303,7 +318,7 @@ static int printHtmlAttrs(FILE *fp, ccVec TP(StringPair) *attrs) {
     CHK_NEG_RET(r1);
     ret += r1;
   }
-  
+
   return ret;
 }
 
@@ -332,7 +347,7 @@ static int printHtmlDoc(FILE *fp,
     r1 = printHtmlImpl(fp, subDoc, lineBreak);
     CHK_NEG_RET(r1);
     ret += r1;
-    
+
     if (i == subDocLen - 1) {
       if (lineBreak) {
         r1 = fputc('\n', fp);
@@ -343,7 +358,7 @@ static int printHtmlDoc(FILE *fp,
       HtmlDoc *nextDoc = *(HtmlDoc**)(ccVecNth(&doc->subDocs, i + 1));
       HtmlDocImpl *subDocImpl = (HtmlDocImpl*)subDoc;
       HtmlDocImpl *nextDocImpl = (HtmlDocImpl*)nextDoc;
-      if (lineBreak 
+      if (lineBreak
           && (needLineBreak(nextDocImpl->tagType)
               || needLineBreak(subDocImpl->tagType))) {
         r1 = fputc('\n', fp);
@@ -367,15 +382,15 @@ static int printHtmlLeafDoc(FILE *fp,
 
   int ret = fprintf(fp, "<%s", tagName);
   CHK_NEG_RET(ret);
-  
+
   int r1 = printHtmlAttrs(fp, &doc->attrs);
   CHK_NEG_RET(r1);
   ret += r1;
-  
+
   r1 = fprintf(fp, "/>");
   CHK_NEG_RET(r1);
   ret += r1;
-  
+
   return ret;
 }
 
@@ -384,11 +399,11 @@ static int printHtmlCustomDoc(FILE *fp,
                               _Bool lineBreak) {
   int ret = fprintf(fp, "<%s", doc->customTagName);
   CHK_NEG_RET(ret);
-  
+
   int r1 = printHtmlAttrs(fp, &doc->attrs);
   CHK_NEG_RET(r1);
   ret += r1;
-  
+
   if (lineBreak) {
     r1 = fprintf(fp, ">\n");
   } else {
@@ -403,7 +418,7 @@ static int printHtmlCustomDoc(FILE *fp,
     r1 = printHtmlImpl(fp, subDoc, lineBreak);
     CHK_NEG_RET(r1);
     ret += r1;
-    
+
     r1 = fprintf(fp, "\n");
     CHK_NEG_RET(r1);
     ret += r1;
@@ -412,6 +427,6 @@ static int printHtmlCustomDoc(FILE *fp,
   r1 = fprintf(fp, "</%s>", doc->customTagName);
   CHK_NEG_RET(r1);
   ret += r1;
-  
+
   return ret;
 }

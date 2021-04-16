@@ -9,24 +9,25 @@
 typedef enum e_http_doc_tag_type {
   HTML_HTML       = 1,   /* <html>            */
   HTML_TITLE      = 2,   /* <title>           */
-  HTML_BODY       = 3,   /* <body>            */
-  HTML_META       = 4,   /* <meta>            */
-  HTML_BR         = 5,   /* <br/>             */
-  HTML_HR         = 6,   /* <hr/>             */
-  HTML_H1         = 7,   /* <h1>              */
-  HTML_H2         = 8,   /* <h2>              */
-  HTML_H3         = 9,   /* <h3>              */
-  HTML_H4         = 10,  /* <h4>              */
-  HTML_H5         = 11,  /* <h5>              */
-  HTML_H6         = 12,  /* <h6>              */
-  HTML_DIV        = 13,  /* <div>             */
-  HTML_PARA       = 14,  /* <p>               */
-  HTML_SPAN       = 15,  /* <span>            */
-  HTML_BOLD       = 16,  /* <b>               */
-  HTML_DELETE     = 17,  /* <del>             */
-  HTML_FORM       = 18,  /* <form>            */
-  HTML_INPUT      = 19,  /* <input>           */
-  HTML_TEXT       = 20,  /* <textarea>        */
+  HTML_HEAD       = 3,   /* <head>            */
+  HTML_BODY       = 4,   /* <body>            */
+  HTML_META       = 5,   /* <meta>            */
+  HTML_BR         = 6,   /* <br/>             */
+  HTML_HR         = 7,   /* <hr/>             */
+  HTML_H1         = 8,   /* <h1>              */
+  HTML_H2         = 9,   /* <h2>              */
+  HTML_H3         = 10,  /* <h3>              */
+  HTML_H4         = 11,  /* <h4>              */
+  HTML_H5         = 12,  /* <h5>              */
+  HTML_H6         = 13,  /* <h6>              */
+  HTML_DIV        = 14,  /* <div>             */
+  HTML_PARA       = 15,  /* <p>               */
+  HTML_SPAN       = 16,  /* <span>            */
+  HTML_BOLD       = 17,  /* <b>               */
+  HTML_DELETE     = 18,  /* <del>             */
+  HTML_FORM       = 19,  /* <form>            */
+  HTML_INPUT      = 20,  /* <input>           */
+  HTML_TEXT       = 21,  /* <textarea>        */
 
   HTML_SCRIPT_URL = 198, /* <script url="">   */
   HTML_SCRIPT     = 199, /* <script></script> */
@@ -45,6 +46,7 @@ HtmlDoc *htmlRootDoc(void);
 HtmlDoc *htmlTag(HtmlTagType tag);
 HtmlDoc *htmlCustomTag(const char *customTag);
 HtmlDoc *htmlPlainNode(const char *plainText);
+HtmlDoc *htmlScriptUrlNode(const char *url);
 HtmlDoc *htmlScriptNode(const char *scriptText);
 
 HtmlTagType htmlGetTag(const HtmlDoc *doc);
