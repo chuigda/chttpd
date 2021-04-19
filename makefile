@@ -12,6 +12,7 @@ all: \
 	util \
 	pl2 \
 	cfglang \
+	html \
 	agno3 \
 	http
 
@@ -40,7 +41,7 @@ out/http.o: src/http.c ${HEADERS}
 	@$(CC) src/http.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/http.o
 
 # Build AgNO3 lang objects
-AGNO3_OBJECTS := out/agno3.o out/html.o
+AGNO3_OBJECTS := out/agno3.o
 
 .PHONY: agno3 agno3_prompt
 agno3: agno3_prompt ${AGNO3_OBJECTS}
@@ -48,9 +49,20 @@ agno3: agno3_prompt ${AGNO3_OBJECTS}
 agno3_prompt:
 	@echo Building AgNO3 html preprocessor
 
-out/agno3.o: src/agno3.c ${HEADERS}
+out/agno3.o: out/ src/agno3.c src/agno3_impl.c ${HEADERS}
 	@$(LOG) CC src/agno3.c
-	@$(CC) src/agno3.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/agno3.o
+	@$(CC) src/agno3.c \
+		$(INCLUDES) $(WARNINGS) $(CFLAGS) \
+		-I src/ -c -o out/agno3.o
+
+# Build HTML library objects
+HTML_OBJECTS := out/html.o
+
+.PHONY: html html_prompt
+html: html_prompt out/html.o
+
+html_prompt:
+	@echo Building HTML generation and rendering library
 
 out/html.o: src/html.c ${HEADERS}
 	@$(LOG) CC src/html.c
@@ -67,7 +79,9 @@ cfglang_prompt:
 
 out/cfglang.o: src/cfglang.c ${HEADERS}
 	@$(LOG) CC src/cfglang.c
-	@$(CC) src/cfglang.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/cfglang.o
+	@$(CC) src/cfglang.c \
+		$(INCLUDES) $(WARNINGS) $(CFLAGS) \
+		-c -o out/cfglang.o
 
 # Build PL2 objects
 PL2_OBJECTS := out/pl2b.o
@@ -107,12 +121,14 @@ cclib_prompt:
 out/cc_list.o: src_ext/cc_list.c ${HEADERS}
 	@$(LOG) CC src_ext/cc_list.c
 	@$(CC) src_ext/cc_list.c \
-		$(INCLUDES) $(WARNINGS) $(CFLAGS) -c -fPIC -o out/cc_list.o
+		$(INCLUDES) $(WARNINGS) $(CFLAGS) \
+		-c -fPIC -o out/cc_list.o
 
 out/cc_vec.o: src_ext/cc_vec.c ${HEADERS}
 	@$(LOG) CC src_ext/cc_vec.c
 	@$(CC) src_ext/cc_vec.c \
-		$(INCLUDES) $(WARNINGS) $(CFLAGS) -c -fPIC -o out/cc_vec.o
+		$(INCLUDES) $(WARNINGS) $(CFLAGS) \
+		-c -fPIC -o out/cc_vec.o
 
 # Run procedural macro preprocessing
 .PHONY: prep prep_prompt
@@ -194,35 +210,31 @@ clean:
 # Unit testing
 .PHONY: test test_prompt
 test: \
-	all \
 	test_prompt \
-	test_agno3
+	include_ext_dir \
+	src_ext_dir \
+	out_dir \
+	test_html
 
 test_prompt:
 	@echo Running unit-tests
 
-# Test case TEST_AGNO3
-.PHONY: test_agno3 test_agno3_prompt
-test_agno3: \
-		test_agno3_prompt \
-		cclib util pl2 agno3 \
-		test/test_agno3.c	
-	@$(LOG) CC test/test_agno3.c
-	@$(CC) test/test_agno3.c \
-		$(INCLUDES) \
-		$(WARNINGS) \
-		$(CFLAGS) \
-		-c -o out/test_agno3.o
-	@$(LOG) BUILD out/test_agno3
+# Test case TEST_HTML
+.PHONY: test_html test_html_prompt
+test_html: test_html_prompt cclib util html test/test_html.c
+	@$(LOG) CC test/test_html.c
+	@$(CC) test/test_html.c \
+		$(INCLUDES) $(WARNINGS) $(CFLAGS) \
+		-c -o out/test_html.o
+	@$(LOG) BUILD out/test_html
 	@$(CC) \
 		${CCLIB_OBJECTS} \
 		${UTIL_OBJECTS} \
-		${PL2_OBJECTS} \
-		${AGNO3_OBJECTS} \
-		out/test_agno3.o \
-		-o out/test_agno3
-	@$(LOG) RUN out/test_agno3
-	@out/test_agno3
+		${HTML_OBJECTS} \
+		out/test_html.o \
+		-o out/test_html
+	@$(LOG) RUN out/test_html
+	@out/test_html
 
-test_agno3_prompt:
-	@echo Testing AgNO3 library
+test_html_prompt:
+	@echo Testing HTML library

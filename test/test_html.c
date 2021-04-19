@@ -1,22 +1,5 @@
 #include "html.h"
-#include "agno3.h"
 #include "vktest.h"
-
-static void test_vk_test(void) {
-  static const char *TEST_NAME = "DummyTest";
-
-  VK_TEST_SECTION_BEGIN(TEST_NAME);
-
-  VK_ASSERT_EQUALS(4, 2 + 2);
-
-  LOG_DBG("This is a %s level log", "debug");
-  LOG_INFO("This is an %s level log", "info");
-  LOG_WARN("This is a %s level log", "warn");
-  LOG_ERR("This is an %s level log", "error");
-  LOG_FATAL("This is a %s level log", "fatal");
-
-  VK_TEST_SECTION_END(TEST_NAME);
-}
 
 static void test_html_print(void) {
   static const char *TEST_NAME = "TestHtmlPrint";
@@ -93,7 +76,6 @@ static void test_html_print(void) {
 int main() {
   VK_TEST_BEGIN
 
-  test_vk_test();
   test_html_print();
 
   VK_TEST_END
