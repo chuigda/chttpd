@@ -36,7 +36,7 @@ Flask createFlask(HttpRequest request) {
 
   flaskImpl->rootDoc = htmlRootDoc();
   flaskImpl->curDoc = flaskImpl->rootDoc;
-  ccListPushBack(&flaskImpl->docChain, &flaskImpl->rootDoc);
+  ccVecPushBack(&flaskImpl->docChain, &flaskImpl->rootDoc);
 
   return (Flask)flaskImpl;
 }
