@@ -15,9 +15,10 @@
 #ifndef CFG_LANG_H
 #define CFG_LANG_H
 
-#include "pl2b.h"
 #include "cc_vec.h"
 #include "http_base.h"
+#include "pl2b.h"
+#include "util.h"
 
 #ifdef __cplusplus
 extern "C" {
