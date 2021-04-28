@@ -1,3 +1,4 @@
+CCPM_CFLAGS ?= -O2
 CFLAGS ?= -O0 -g
 WARNINGS := -Wall -Wextra -Wc++-compat -Wno-unused-function
 LOG := sh -c 'printf \\t$$0\\t$$1\\n'
@@ -197,7 +198,12 @@ src_ext/:
 
 cc_proc_macro: cclib/cc_proc_macro.c
 	@$(LOG) BUILD cc_proc_macro
-	@$(CC) cclib/cc_proc_macro.c $(WARNINGS) $(CFLAGS) -o cc_proc_macro
+	@$(CC) cclib/cc_proc_macro.c \
+		$(WARNINGS) \
+		$(CCPM_CFLAGS) \
+		-o cc_proc_macro
+	@$(LOG) STRIP cc_proc_macro
+	@strip cc_proc_macro
 
 # Cleanup
 .PHONY: clean
