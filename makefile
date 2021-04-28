@@ -21,6 +21,7 @@ all: \
 HEADERS = include/agno3.h \
 	include/cfglang.h \
 	include/html.h \
+	include/bufread.h \
 	include/http.h \
 	include/http_base.h \
 	include/pl2b.h \
@@ -29,7 +30,7 @@ HEADERS = include/agno3.h \
 	include_ext/cc_vec.h
 
 # Build HTTP objects
-HTTP_OBJECTS := out/http.o
+HTTP_OBJECTS := out/http.o out/bufread.o
 
 .PHONY: http http_prompt
 http: http_prompt ${HTTP_OBJECTS}
@@ -40,6 +41,11 @@ http_prompt:
 out/http.o: src/http.c ${HEADERS}
 	@$(LOG) CC src/http.c
 	@$(CC) src/http.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/http.o
+
+out/bufread.o: src/bufread.c ${HEADERS}
+	@$(LOG) CC src/bufread.c
+	@$(CC) src/bufread.c $(INCLUDES) $(WARNINGS) $(CFLAGS) \
+    -c -o out/bufread.o
 
 # Build AgNO3 lang objects
 AGNO3_OBJECTS := out/agno3.o
