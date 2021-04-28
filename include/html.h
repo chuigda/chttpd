@@ -1,3 +1,7 @@
+/**
+ * html.h: defines a representation for HTML document
+ */
+
 #ifndef HTML_H
 #define HTML_H
 

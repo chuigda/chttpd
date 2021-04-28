@@ -1,3 +1,17 @@
+/**
+ * cfg_lang.h: minimal configuration language for http server
+ *
+ * Basic grammar of configuration language:
+ *   configuration ::= lines
+ *   lines ::= lines line | NIL
+ *   line ::= router-line | config-line
+ *   router-line ::= method PATH handler-type HANDLER
+ *   method ::= "get" | "post"
+ *   handler-type ::= "script" | "cgi" | "static"
+ *   config-line ::= "listen-address" ADDRESS
+ *                 | "listen-port" PORT
+ */
+
 #ifndef CFG_LANG_H
 #define CFG_LANG_H
 
@@ -26,11 +40,12 @@ typedef struct st_config {
   const char *address;
   int port;
 
-  ccVec routes;
+  ccVec TP(Route) routes;
 } Config;
 
 void initConfig(Config *config);
 void dropConfig(Config *config);
+
 const pl2b_Language *getCfgLanguage(void);
 
 #ifdef __cplusplus

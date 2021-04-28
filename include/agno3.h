@@ -1,5 +1,9 @@
-/* http://www.yinwang.org/blog-cn/2017/05/25/dsl */
-/* AgNO3 + NaCl = AgCl↓ + NaNO3 */
+/**
+ * agno3.h: The PL2-based HTML document generator
+ *
+ * http://www.yinwang.org/blog-cn/2017/05/25/dsl
+ * AgNO3 + NaCl = AgCl↓ + NaNO3
+ */
 
 #ifndef AGNO3_H
 #define AGNO3_H

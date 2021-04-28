@@ -1,3 +1,41 @@
+/**
+ * pl2b.h: Highly customized PL2BK generic programming infrastructure
+ *
+ * PL2 is a opensource project, released under Limited Derivative Work
+ * Public License:
+ * 
+ *   This license is silimar to GPL in effect, but limited the
+ *   definition of "derivative work".
+ *
+ *   Anyone is free to copy, use or compile this software, either in
+ *   source code form or as compiled binary, for any purpose, 
+ *   commercial or non-commercial, and by any means.
+ *
+ *   Modifying the pl2.c or pl2.h is considered derivative work, and
+ *   modified source code should be distributed under the same or 
+ *   equivalent license term. Including pl2.h, copying that header file
+ *   or source file into one's program, modifying the main.c, modifying
+ *   building scripts and linking the libraru dynamically or statically
+ *   are not considered derivation work.
+ *
+ *   Reading the source code and writing an equivalent or similar
+ *   edition in another form is never considered derivation work.
+ *
+ *   In jurisdictions that recognize copyright laws, the author or 
+ *   authors of this software dedicate part of copyright interest in the
+ *   software to the public domain. We make this dedication for the 
+ *   benefit of the public at large and to the detriment of our heirs
+ *   and sccessors.
+ *
+ *   THIS SOFTWARE IS PROVIDED "AS IS", WITH OUT WARRANTY OF ANY KIND,
+ *   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *   MECHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY
+ *   CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ *   CONTRACT, TORT OR OTHERWISE, ARISING FORM, OUT OF OR IN CONNECTION
+ *   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 #ifndef PLAPI_PL2B_H
 #define PLAPI_PL2B_H
 
