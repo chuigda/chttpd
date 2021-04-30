@@ -41,22 +41,6 @@
 
 #define PL2B_API
 
-/*** -------------------------- versioning ------------------------- ***/
-
-#define PL2_EDITION       "PL2-BK"       /* Latin name */
-#define PL2_EDITION_CN    "霹雳2-丙-K"   /* Chinese name */
-#define PL2_EDITION_RU    "ПЛ2-БК"       /* Cyrillic name */
-#define PL2_EDITION_JP    "ピリ-2BK"     /* Japanese name */
-#define PL2_EDITION_KR    "펠리-2BK"     /* Kroean name */
-#define PL2B_VER_MAJOR    0              /* Major version of PL2BK */
-#define PL2B_VER_MINOR    3              /* Minor version of PL2BK */
-#define PL2B_VER_PATCH    0              /* Patch version of PL2BK */
-#define PL2B_VER_POSTFIX  "BlueGiant"    /* Version postfix */
-
-const char *pl2b_getLocaleName(void);
-
-/*** ---------------------- end configurations --------------------- ***/
-
 #include <stddef.h>
 #include <stdint.h>
 
@@ -166,27 +150,6 @@ pl2b_Program pl2b_parse(char *source,
                         pl2b_Error *error);
 void pl2b_dropProgram(pl2b_Program *program);
 
-/*** -------------------- Semantic-ver parsing  -------------------- ***/
-
-#define PL2B_SEMVER_POSTFIX_LEN 15
-
-typedef struct st_pl2b_sem_ver {
-  uint16_t major;
-  uint16_t minor;
-  uint16_t patch;
-  char postfix[PL2B_SEMVER_POSTFIX_LEN];
-  _Bool exact;
-} pl2b_SemVer;
-
-pl2b_SemVer pl2b_zeroVersion(void);
-pl2b_SemVer pl2b_parseSemVer(const char *src, pl2b_Error *error);
-_Bool pl2b_isZeroVersion(pl2b_SemVer ver);
-_Bool pl2b_isAlpha(pl2b_SemVer ver);
-_Bool pl2b_isStable(pl2b_SemVer ver);
-_Bool pl2b_isCompatible(pl2b_SemVer expected, pl2b_SemVer actual);
-pl2b_CmpResult pl2b_semverCmp(pl2b_SemVer ver1, pl2b_SemVer ver2);
-void pl2b_semverToString(pl2b_SemVer ver, char *buffer);
-
 /*** ------------------------ pl2b_Extension ----------------------- ***/
 
 typedef pl2b_Cmd *(pl2b_PCallCmdStub)(pl2b_Program *program,
@@ -219,9 +182,6 @@ typedef struct st_pl2b_langauge {
   pl2b_PCallCmd *pCallCmds;
   pl2b_PCallCmdStub *fallback;
 } pl2b_Language;
-
-typedef pl2b_Language *(pl2b_LoadLanguage)(pl2b_SemVer version,
-                                           pl2b_Error *error);
 
 /*** ----------------------------- Run ----------------------------- ***/
 
