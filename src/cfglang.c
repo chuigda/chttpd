@@ -12,8 +12,9 @@ const char *HANDLER_TYPE_NAMES[] = {
 };
 
 void initConfig(Config *config) {
-  config->address = NULL;
-  config->port = 0;
+  config->address = "127.0.0.1";
+  config->port = 8080;
+  config->maxPending = 16;
   ccVecInit(&config->routes, sizeof(Route));
 }
 
@@ -31,6 +32,11 @@ static pl2b_Cmd* configPort(pl2b_Program *program,
                             pl2b_Cmd *command,
                             pl2b_Error *error);
 
+static pl2b_Cmd *configPend(pl2b_Program *program,
+                            void *context,
+                            pl2b_Cmd *command,
+                            pl2b_Error *error);
+
 static pl2b_Cmd* addRoute(pl2b_Program *program,
                           void *context,
                           pl2b_Cmd *command,
@@ -40,6 +46,7 @@ const pl2b_Language *getCfgLanguage(void) {
   static pl2b_PCallCmd pCallCmds[] = {
     { "listen-address", NULL, configAddr, 0, 0 },
     { "listen-port",    NULL, configPort, 0, 0 },
+    { "max-pending",    NULL, configPend, 0, 0 },
     { "post",           NULL, addRoute,   0, 0 },
     { "POST",           NULL, addRoute,   0, 0 },
     { "Post",           NULL, addRoute,   0, 0 },
@@ -66,12 +73,6 @@ static pl2b_Cmd* configAddr(pl2b_Program *program,
   (void)program;
 
   Config *config = (Config*)context;
-  if (config->address != NULL) {
-    pl2b_errPrintf(error, PL2B_ERR_USER, command->sourceInfo, NULL,
-                   "server address already set to: %s",
-                   config->address);
-    return NULL;
-  }
 
   if (pl2b_argsLen(command) != 1) {
     pl2b_errPrintf(error, PL2B_ERR_USER, command->sourceInfo, NULL,
@@ -90,13 +91,6 @@ static pl2b_Cmd *configPort(pl2b_Program *program,
   (void)program;
 
   Config *config = (Config*)context;
-  if (config->port != 0) {
-    pl2b_errPrintf(error, PL2B_ERR_USER, command->sourceInfo, NULL,
-                   "server port already set to: %d",
-                   config->port);
-
-  }
-
   if (pl2b_argsLen(command) != 1) {
     pl2b_errPrintf(error, PL2B_ERR_USER, command->sourceInfo, NULL,
                    "listen-port: expects exactly one argument");
@@ -112,6 +106,31 @@ static pl2b_Cmd *configPort(pl2b_Program *program,
   }
 
   config->port = port;
+  return command->next;
+}
+
+static pl2b_Cmd *configPend(pl2b_Program *program,
+                            void *context,
+                            pl2b_Cmd *command,
+                            pl2b_Error *error) {
+  (void)program;
+
+  Config *config = (Config*)context;
+  if (pl2b_argsLen(command) != 1) {
+    pl2b_errPrintf(error, PL2B_ERR_USER, command->sourceInfo, NULL,
+                   "max-pending: expects exactly one argument");
+    return NULL;
+  }
+  
+  int maxPending = atoi(command->args[0].str);
+  if (maxPending <= 0) {
+    pl2b_errPrintf(error, PL2B_ERR_USER, command->sourceInfo, NULL,
+                   "max-pending: invalid pending count: %s",
+                   command->args[0].str);
+    return NULL;
+  }
+
+  config->maxPending = maxPending;
   return command->next;
 }
 

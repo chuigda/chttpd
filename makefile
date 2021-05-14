@@ -78,7 +78,7 @@ agno3: agno3_prompt ${AGNO3_OBJECTS}
 agno3_prompt:
 	@echo Building AgNO3 html preprocessor
 
-out/agno3.o: out/ src/agno3.c src/agno3_impl.c ${HEADERS}
+out/agno3.o: src/agno3.c src/agno3_impl.c ${HEADERS}
 	@$(LOG) CC src/agno3.c
 	@$(CC) src/agno3.c \
 		$(INCLUDES) $(WARNINGS) $(CFLAGS) \
