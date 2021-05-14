@@ -165,14 +165,34 @@ static const char *ERROR_PAGE_404_CONTENT =
 "  <meta charset=\"utf-8\">\n"
 "  <body>\n"
 "    <div align=\"center\">\n"
-"      <h2>404 Not Found, sorry.</h1>\n"
+"      <h2>404 Not Found</h2>\n"
 "      <hr/>\n"
 "      Powered by chttpd: https://github.com/ICEYSELF/chttpd\n"
 "    </div>\n"
 "  </body>\n"
 "</html>";
 
-static const char *ERROR_PAGE_404_HEAD = "HTTP/1.1 404 Not Found\r\n";
+static const char *ERROR_PAGE_404_HEAD = 
+"HTTP/1.1 404 Not Found\r\n";
+
+static const char *ERROR_PAGE_500_CONTENT_PART1 = 
+"<html>\n"
+"  <meta charset=\"utf-8\">\n"
+"  <body>\n"
+"    <div align=\"center\">\n"
+"      <h2>500 Internal Server Error</h2>\n"
+"      <hr/>\n"
+"      <code style=\"text-align: left\"><pre>\n";
+
+static const char *ERROR_PAGE_500_CONTENT_PART2 = 
+"      </pre></code>\n"
+"      Powered by chttpd: https://github.com/ICEYSELF/chttpd\n"
+"    </div>\n"
+"  </body>\n"
+"</html>";
+
+static const char *ERROR_PAGE_500_HEAD =
+"HTTP/1.1 500 Internal Server Error\r\n";
 
 static const char *GENERAL_HEADERS = 
 "Content-Type: text/html\r\n"
@@ -190,10 +210,17 @@ static void* httpHandler(void *context) {
     LOG_ERR("error calling fdopen: %d", errno);
   }
 
-  fputs(ERROR_PAGE_404_HEAD, fp);
-  fprintf(fp, "Content-Length: %u\r\n", strlen(ERROR_PAGE_404_CONTENT));
+  const char *specificError = "incorrect PL2 syntax.";
+
+  fputs(ERROR_PAGE_500_HEAD, fp);
+  fprintf(fp, "Content-Length: %u\r\n",
+          strlen(ERROR_PAGE_500_CONTENT_PART1)
+          + strlen(specificError)
+          + strlen(ERROR_PAGE_500_CONTENT_PART2));
   fputs(GENERAL_HEADERS, fp);
-  fputs(ERROR_PAGE_404_CONTENT, fp);
+  fputs(ERROR_PAGE_500_CONTENT_PART1, fp);
+  fputs(specificError, fp);
+  fputs(ERROR_PAGE_500_CONTENT_PART2, fp);
 
   fflush(fp);
   fclose(fp);
