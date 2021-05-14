@@ -16,4 +16,6 @@ typedef enum e_http_code {
   HTTP_CODE_SERVER_ERR    = 500
 } HttpCode;
 
+extern const char *HTTP_METHOD_NAMES[];
+
 #endif /* HTTP_BASE_H */

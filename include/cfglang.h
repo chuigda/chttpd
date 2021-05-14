@@ -30,6 +30,8 @@ typedef enum e_handler_type {
   HDLR_STATIC = 2
 } HandlerType;
 
+extern const char *HANDLER_TYPE_NAMES[];
+
 typedef struct st_route {
   HttpMethod httpMethod;
   const char *path;

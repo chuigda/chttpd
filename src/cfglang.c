@@ -5,6 +5,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+const char *HANDLER_TYPE_NAMES[] = {
+  [HDLR_SCRIPT] = "SCRIPT",
+  [HDLR_CGI] = "CGI",
+  [HDLR_STATIC] = "STATIC"
+};
+
 void initConfig(Config *config) {
   config->address = NULL;
   config->port = 0;
@@ -73,8 +79,6 @@ static pl2b_Cmd* configAddr(pl2b_Program *program,
     return NULL;
   }
 
-  fprintf(stderr, "[info] setting server address to: %s\n",
-          command->args[0].str);
   config->address = command->args[0].str;
   return command->next;
 }
@@ -107,7 +111,6 @@ static pl2b_Cmd *configPort(pl2b_Program *program,
     return NULL;
   }
 
-  fprintf(stderr, "[info] setting server port to: %d\n", port);
   config->port = port;
   return command->next;
 }
@@ -175,9 +178,6 @@ static pl2b_Cmd* addRoute(pl2b_Program *program,
   }
 
   const char *handler = command->args[2].str;
-
-  fprintf(stderr, "[info] adding router: %s %s %s %s\n",
-          methodStr, path, handlerTypeStr, handler);
 
   Route *route = (Route*)malloc(sizeof(Route));
   route->httpMethod = method;

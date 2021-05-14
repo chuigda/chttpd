@@ -57,6 +57,16 @@ int main(int argc, const char *argv[]) {
     return -1;
   }
 
+  LOG_INFO("chttpd listening to: %s:%d", config.address, config.port);
+  for (size_t i = 0; i < ccVecLen(&config.routes); i++) {
+    Route *route = (Route*)ccVecNth(&config.routes, i);
+    LOG_INFO(" - route \"%s %s\" to \"%s %s\"",
+             HTTP_METHOD_NAMES[route->httpMethod],
+             route->path,
+             HANDLER_TYPE_NAMES[route->handlerType],
+             route->handlerPath);
+  }
+
   dropConfig(&config);
   pl2b_dropError(error);
   pl2b_dropProgram(&cfgProgram);
