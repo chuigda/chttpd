@@ -54,7 +54,7 @@ chttpd: all_deps src/main.c
 		${PL2_OBJECTS} \
 		${UTIL_OBJECTS} \
 		${CCLIB_OBJECTS} \
-		-o chttpd
+		-o chttpd -lpthread
 
 # Build HTTP objects
 HTTP_OBJECTS := out/http.o

@@ -122,7 +122,7 @@ static int httpMainLoop(const Config *config) {
   listen(fdSock, config->maxPending);
 
   struct sockaddr_in clientAddr;
-  size_t clientAddrSize = sizeof(clientAddr);
+  socklen_t clientAddrSize = sizeof(clientAddr);
   for (;;) {
     int fdConnection = accept(fdSock,
                               (struct sockaddr*)&clientAddr,
@@ -213,7 +213,7 @@ static void* httpHandler(void *context) {
   const char *specificError = "incorrect PL2 syntax.";
 
   fputs(ERROR_PAGE_500_HEAD, fp);
-  fprintf(fp, "Content-Length: %u\r\n",
+  fprintf(fp, "Content-Length: %zu\r\n",
           strlen(ERROR_PAGE_500_CONTENT_PART1)
           + strlen(specificError)
           + strlen(ERROR_PAGE_500_CONTENT_PART2));
