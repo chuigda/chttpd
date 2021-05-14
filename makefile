@@ -245,6 +245,7 @@ clean:
 	rm -rf src_ext
 	rm -rf out
 	rm -f cc_proc_macro
+	rm chttpd
 
 # Unit testing
 .PHONY: test test_prompt
