@@ -1,6 +1,8 @@
 #ifndef HTTP_H
 #define HTTP_H
 
+#include <stdio.h>
+
 #include "cc_vec.h"
 #include "http_base.h"
 #include "util.h"
@@ -21,7 +23,7 @@ typedef struct st_http_request {
   char body[0];
 } HttpRequest;
 
-HttpRequest *readHttpRequest(int fd);
+HttpRequest *readHttpRequest(FILE *fp);
 void dropHttpRequest(HttpRequest *request);
 
 typedef struct st_http_response {
@@ -36,7 +38,7 @@ HttpResponse *createHttpResponse(HttpCode code,
                                  const char *statusText,
                                  ccVec headers,
                                  const char *body);
-int writeHttpResponse(int fd, HttpResponse *response);
+int writeHttpResponse(FILE *fp, HttpResponse *response);
 void dropHttpResponse(HttpResponse *response);
 
 #endif /* HTTP_H */

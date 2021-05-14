@@ -15,7 +15,7 @@
  *   modified source code should be distributed under the same or 
  *   equivalent license term. Including pl2.h, copying that header file
  *   or source file into one's program, modifying the main.c, modifying
- *   building scripts and linking the libraru dynamically or statically
+ *   building scripts and linking the library dynamically or statically
  *   are not considered derivation work.
  *
  *   Reading the source code and writing an equivalent or similar
@@ -185,10 +185,10 @@ typedef struct st_pl2b_langauge {
 
 /*** ----------------------------- Run ----------------------------- ***/
 
-void* pl2b_runWithLanguage(pl2b_Program *program,
-                           pl2b_Language *language,
-                           void *userContext,
-                           pl2b_Error *error);
+void pl2b_runWithLanguage(pl2b_Program *program,
+                          const pl2b_Language *language,
+                          void *userContext,
+                          pl2b_Error *error);
 
 #ifdef __cplusplus
 } /* extern "C" */

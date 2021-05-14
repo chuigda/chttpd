@@ -6,6 +6,11 @@ INCLUDES := -I include -I include_ext
 
 .PHONY: all
 all: \
+	all_deps \
+	chttpd_main
+
+.PHONY: all_deps
+all_deps: \
 	include_ext_dir \
 	src_ext_dir \
 	out_dir \
@@ -20,8 +25,8 @@ all: \
 # All headers
 HEADERS = include/agno3.h \
 	include/cfglang.h \
+  include/file_util.h \
 	include/html.h \
-	include/bufread.h \
 	include/http.h \
 	include/http_base.h \
 	include/pl2b.h \
@@ -29,8 +34,30 @@ HEADERS = include/agno3.h \
 	include_ext/cc_list.h \
 	include_ext/cc_vec.h
 
+# Build CHTTPD main program
+.PHONY: chttpd_main chttpd_prompt
+
+chttpd_main: chttpd_prompt chttpd
+
+chttpd_prompt:
+	@echo Building chttpd executable
+
+chttpd: all_deps src/main.c
+	@$(LOG) CC src/main.c
+	@$(CC) src/main.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/main.o
+	@$(LOG) BUILD chttpd
+	@$(CC) out/main.o \
+		${HTTP_OBJECTS} \
+		${AGNO3_OBJECTS} \
+		${HTML_OBJECTS} \
+		${CFG_LANG_OBJECTS} \
+		${PL2_OBJECTS} \
+		${UTIL_OBJECTS} \
+		${CCLIB_OBJECTS} \
+		-o chttpd
+
 # Build HTTP objects
-HTTP_OBJECTS := out/http.o out/bufread.o
+HTTP_OBJECTS := out/http.o
 
 .PHONY: http http_prompt
 http: http_prompt ${HTTP_OBJECTS}
@@ -41,11 +68,6 @@ http_prompt:
 out/http.o: src/http.c ${HEADERS}
 	@$(LOG) CC src/http.c
 	@$(CC) src/http.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/http.o
-
-out/bufread.o: src/bufread.c ${HEADERS}
-	@$(LOG) CC src/bufread.c
-	@$(CC) src/bufread.c $(INCLUDES) $(WARNINGS) $(CFLAGS) \
-    -c -o out/bufread.o
 
 # Build AgNO3 lang objects
 AGNO3_OBJECTS := out/agno3.o
@@ -104,7 +126,7 @@ out/pl2b.o: pl2/pl2b.c ${HEADERS}
 	@$(CC) pl2/pl2b.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/pl2b.o
 
 # Build UTIL objects
-UTIL_OBJECTS := out/util.o
+UTIL_OBJECTS := out/util.o out/file_util.o
 
 .PHONY: util util_prompt
 util: util_prompt ${UTIL_OBJECTS}
@@ -115,6 +137,11 @@ util_prompt:
 out/util.o: src/util.c ${HEADERS}
 	@$(LOG) CC src/util.c
 	@$(CC) src/util.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/util.o
+
+out/file_util.o: src/file_util.c ${HEADERS}
+	@$(LOG) CC src/file_util.c
+	@$(CC) src/file_util.c $(INCLUDES) $(WARNINGS) $(CFLAGS) \
+		-c -o out/file_util.o
 
 # Build CCLIB objects
 CCLIB_OBJECTS := out/cc_vec.o out/cc_list.o

@@ -567,7 +567,7 @@ typedef struct st_run_context {
   pl2b_Cmd *curCmd;
   void *userContext;
 
-  pl2b_Language *language;
+  const pl2b_Language *language;
 } RunContext;
 
 static RunContext *createRunContext(pl2b_Program *program);
@@ -596,24 +596,24 @@ void pl2b_run(pl2b_Program *program, pl2b_Error *error) {
   destroyRunContext(context);
 }
 
-void* pl2b_runWithLanguage(pl2b_Program *program,
-                           pl2b_Language *language,
-                           void *userContext,
-                           pl2b_Error *error) {
+void pl2b_runWithLanguage(pl2b_Program *program,
+                          const pl2b_Language *language,
+                          void *userContext,
+                          pl2b_Error *error) {
   assert(language != NULL);
 
   RunContext *context = createRunContext(program);
   if (context == NULL) {
     pl2b_errPrintf(error, PL2B_ERR_MALLOC, pl2b_sourceInfo(NULL, 0),
                    NULL, "run: cannot allocate memory for run context");
-    return NULL;
+    return;
   }
 
   context->language = language;
   context->userContext = userContext;
   if (pl2b_isError(error)) {
     destroyRunContext(context);
-    return NULL;
+    return;
   }
 
   while (cmdHandler(context, context->curCmd, error)) {
@@ -624,7 +624,6 @@ void* pl2b_runWithLanguage(pl2b_Program *program,
 
   context->userContext = NULL;
   destroyRunContext(context);
-  return userContext;
 }
 
 static RunContext *createRunContext(pl2b_Program *program) {
