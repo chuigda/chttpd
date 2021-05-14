@@ -1,12 +1,13 @@
-#include <arpa/inet.h>
 #include <errno.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/ip.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <pthread.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include "cfglang.h"
@@ -16,7 +17,13 @@
 #define LARGE_BUFFER_SIZE 65536
 #define SMALL_BUFFER_SIZE 4096
 
+typedef struct st_http_input_context {
+  const Config *config;
+  int fdConnection;
+} HttpInputContext;
+
 static int httpMainLoop(const Config *config);
+static void *httpHandler(void* context);
 
 int main(int argc, const char *argv[]) {
   if (argc != 2) {
@@ -127,12 +134,70 @@ static int httpMainLoop(const Config *config) {
 
     char *addrStr = inet_ntoa(clientAddr.sin_addr);
     LOG_INFO("accepting connection from: %s", addrStr);
+    
+    HttpInputContext *inputContext =
+      (HttpInputContext*)malloc(sizeof(HttpInputContext));
+    if (inputContext == NULL) {
+      LOG_ERR("failed allocating thread context buffer");
+      continue;
+    }
+    inputContext->config = config;
+    inputContext->fdConnection = fdConnection;
 
-    const char *placeholder = "HTTP/1.1 200 OK\r\n\r\nplaceholder";
-    write(fdConnection, placeholder, strlen(placeholder));
-    close(fdConnection);
+    pthread_t thread;
+    int res = pthread_create(&thread, NULL, httpHandler, inputContext);
+    if (res != 0) {
+      LOG_ERR("error on pthread creation: %d", res);
+      continue;
+    }
+
+    res = pthread_detach(thread);
+    if (res != 0) {
+      LOG_ERR("error on pthread detach: %d", res);
+    }
   }
 
   return 0;
+}
+
+static const char *ERROR_PAGE_404_CONTENT = 
+"<html>\n"
+"  <meta charset=\"utf-8\">\n"
+"  <body>\n"
+"    <div align=\"center\">\n"
+"      <h2>404 Not Found, sorry.</h1>\n"
+"      <hr/>\n"
+"      Powered by chttpd: https://github.com/ICEYSELF/chttpd\n"
+"    </div>\n"
+"  </body>\n"
+"</html>";
+
+static const char *ERROR_PAGE_404_HEAD = "HTTP/1.1 404 Not Found\r\n";
+
+static const char *GENERAL_HEADERS = 
+"Content-Type: text/html\r\n"
+"Content-Encoding: identity\r\n"
+"Connection: close\r\n\r\n";
+
+static void* httpHandler(void *context) {
+  HttpInputContext *inputContext = (HttpInputContext*)context;
+  const Config *config = inputContext->config;
+  int fd = inputContext->fdConnection;
+
+  (void)config;
+  FILE *fp = fdopen(fd, "a+");
+  if (fp == NULL) {
+    LOG_ERR("error calling fdopen: %d", errno);
+  }
+
+  fputs(ERROR_PAGE_404_HEAD, fp);
+  fprintf(fp, "Content-Length: %u\r\n", strlen(ERROR_PAGE_404_CONTENT));
+  fputs(GENERAL_HEADERS, fp);
+  fputs(ERROR_PAGE_404_CONTENT, fp);
+
+  fflush(fp);
+  fclose(fp);
+  free(inputContext);
+  return NULL;
 }
 
