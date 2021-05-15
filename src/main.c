@@ -12,6 +12,7 @@
 
 #include "cfglang.h"
 #include "file_util.h"
+#include "http.h"
 #include "util.h"
 
 #define LARGE_BUFFER_SIZE 65536
@@ -210,6 +211,30 @@ static void* httpHandler(void *context) {
     LOG_ERR("error calling fdopen: %d", errno);
   }
 
+  HttpRequest *request = readHttpRequest(fp);
+  if (request == NULL) {
+    goto close_fp_ret;
+  }
+
+  LOG_INFO("accepting HTTP request: %s %s",
+           HTTP_METHOD_NAMES[request->method],
+           ((StringPair*)ccVecNth(&request->params, 0))->second);
+  for (size_t i = 1; i < ccVecLen(&request->params); i++) {
+    StringPair *param = (StringPair*)ccVecNth(&request->params, i);
+    LOG_INFO(" ?%s=%s", param->first, param->second);
+  }
+
+  for (size_t i = 0; i < ccVecLen(&request->headers); i++) {
+    StringPair *header = (StringPair*)ccVecNth(&request->headers, i);
+    LOG_INFO(" %s: \"%s\"", header->first, header->second);
+  }
+  if (request->contentLength != 0) {
+    LOG_INFO("body:\n\n%s", request->body);
+  }
+
+  // TODO
+  // dropHttpRequest(request);
+
   const char *specificError = "incorrect PL2 syntax.";
 
   fputs(ERROR_PAGE_500_HEAD, fp);
@@ -222,6 +247,7 @@ static void* httpHandler(void *context) {
   fputs(specificError, fp);
   fputs(ERROR_PAGE_500_CONTENT_PART2, fp);
 
+close_fp_ret:
   fflush(fp);
   fclose(fp);
   free(inputContext);

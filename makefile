@@ -4,7 +4,7 @@ WARNINGS := -Wall -Wextra -Wc++-compat -Wno-unused-function
 LOG := sh -c 'printf \\t$$0\\t$$1\\n'
 INCLUDES := -I include -I include_ext
 
-.PHONY: all
+.PHONY: all run
 all: \
 	all_deps \
 	chttpd_main
@@ -245,7 +245,7 @@ clean:
 	rm -rf src_ext
 	rm -rf out
 	rm -f cc_proc_macro
-	rm chttpd
+	rm -f chttpd
 
 # Unit testing
 .PHONY: test test_prompt
