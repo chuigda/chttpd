@@ -26,6 +26,7 @@ all_deps: \
 HEADERS = include/agno3.h \
 	include/cfglang.h \
   include/file_util.h \
+	include/error.h \
 	include/html.h \
 	include/http.h \
 	include/http_base.h \
@@ -126,7 +127,7 @@ out/pl2b.o: pl2/pl2b.c ${HEADERS}
 	@$(CC) pl2/pl2b.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/pl2b.o
 
 # Build UTIL objects
-UTIL_OBJECTS := out/util.o out/file_util.o
+UTIL_OBJECTS := out/util.o out/file_util.o out/error.o
 
 .PHONY: util util_prompt
 util: util_prompt ${UTIL_OBJECTS}
@@ -142,6 +143,10 @@ out/file_util.o: src/file_util.c ${HEADERS}
 	@$(LOG) CC src/file_util.c
 	@$(CC) src/file_util.c $(INCLUDES) $(WARNINGS) $(CFLAGS) \
 		-c -o out/file_util.o
+
+out/error.o: src/error.c ${HEADERS}
+	@$(LOG) CC src/error.c
+	@$(CC) src/error.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/error.o
 
 # Build CCLIB objects
 CCLIB_OBJECTS := out/cc_vec.o out/cc_list.o

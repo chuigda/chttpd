@@ -21,7 +21,7 @@ typedef struct st_http_response_head {
   ccVec TP(StringPair) headers;
 } HttpResponseHead;
 
-Flask createFlask(HttpRequest request);
+Flask createFlask(HttpRequest *request);
 HttpResponseHead extractResponseHead(Flask flask);
 HtmlDoc *extractHtmlDoc(Flask flask);
 void drainFlask(Flask flask);

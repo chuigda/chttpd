@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 
 /*** ----------------- Transmute any char to uchar ----------------- ***/
 
@@ -60,62 +59,13 @@ static _Bool isNullSlice(Slice slice) {
   return slice.start == slice.end;
 }
 
-/*** ----------------- Implementation of pl2b_Error ---------------- ***/
-
-pl2b_Error *pl2b_errorBuffer(uint16_t strBufferSize) {
-  pl2b_Error *ret = (pl2b_Error*)malloc(sizeof(pl2b_Error) + strBufferSize);
-  if (ret == NULL) {
-    return NULL;
-  }
-  memset(ret, 0, sizeof(pl2b_Error) + strBufferSize);
-  ret->errorBufferSize = strBufferSize;
-  return ret;
-}
-
-void pl2b_errPrintf(pl2b_Error *error,
-                    uint16_t errorCode,
-                    pl2b_SourceInfo sourceInfo,
-                    void *extraData,
-                    const char *fmt,
-                    ...) {
-  error->errorCode = errorCode;
-  error->extraData = extraData;
-  error->sourceInfo = sourceInfo;
-  if (error->errorBufferSize == 0) {
-    return;
-  }
-
-  va_list ap;
-  va_start(ap, fmt);
-  vsnprintf(error->reason, error->errorBufferSize, fmt, ap);
-  va_end(ap);
-}
-
-void pl2b_dropError(pl2b_Error *error) {
-  if (error->extraData) {
-    free(error->extraData);
-  }
-  free(error);
-}
-
-_Bool pl2b_isError(pl2b_Error *error) {
-  return error->errorCode != 0;
-}
-
 /*** ------------------- Some toolkit functions -------------------- ***/
-
-pl2b_SourceInfo pl2b_sourceInfo(const char *fileName, uint16_t line) {
-  pl2b_SourceInfo ret;
-  ret.fileName = fileName;
-  ret.line = line;
-  return ret;
-}
 
 pl2b_CmdPart pl2b_cmdPart(char *str, _Bool isString) {
   return (pl2b_CmdPart) { str, isString };
 }
 
-pl2b_Cmd *pl2b_cmd3(pl2b_SourceInfo sourceInfo,
+pl2b_Cmd *pl2b_cmd3(SourceInfo sourceInfo,
                     pl2b_CmdPart cmd,
                     pl2b_CmdPart args[]) {
   return pl2b_cmd5(NULL, NULL, sourceInfo, cmd, args);
@@ -123,7 +73,7 @@ pl2b_Cmd *pl2b_cmd3(pl2b_SourceInfo sourceInfo,
 
 pl2b_Cmd *pl2b_cmd5(pl2b_Cmd *prev,
                     pl2b_Cmd *next,
-                    pl2b_SourceInfo sourceInfo,
+                    SourceInfo sourceInfo,
                     pl2b_CmdPart cmd,
                     pl2b_CmdPart args[]) {
   uint16_t argLen = 0;
@@ -202,7 +152,7 @@ typedef struct st_parse_context {
   uint32_t srcIdx;
   ParseMode mode;
 
-  pl2b_SourceInfo sourceInfo;
+  SourceInfo sourceInfo;
 
   uint32_t parseBufferSize;
   uint32_t parseBufferUsage;
@@ -211,18 +161,18 @@ typedef struct st_parse_context {
 
 static ParseContext *createParseContext(char *src,
                                         uint16_t parseBufferSize);
-static void parseLine(ParseContext *ctx, pl2b_Error *error);
-static void parseQuesMark(ParseContext *ctx, pl2b_Error *error);
-static void parsePart(ParseContext *ctx, pl2b_Error *error);
-static Slice parseId(ParseContext *ctx, pl2b_Error *error);
-static Slice parseStr(ParseContext *ctx, pl2b_Error *error);
-static void checkBufferSize(ParseContext *ctx, pl2b_Error *error);
-static void finishLine(ParseContext *ctx, pl2b_Error *error);
-static pl2b_Cmd *cmdFromSlices2(pl2b_SourceInfo sourceInfo,
+static void parseLine(ParseContext *ctx, Error *error);
+static void parseQuesMark(ParseContext *ctx, Error *error);
+static void parsePart(ParseContext *ctx, Error *error);
+static Slice parseId(ParseContext *ctx, Error *error);
+static Slice parseStr(ParseContext *ctx, Error *error);
+static void checkBufferSize(ParseContext *ctx, Error *error);
+static void finishLine(ParseContext *ctx, Error *error);
+static pl2b_Cmd *cmdFromSlices2(SourceInfo sourceInfo,
                                 ParsedPartCache *parts);
 static pl2b_Cmd *cmdFromSlices4(pl2b_Cmd *prev,
                                 pl2b_Cmd *next,
-                                pl2b_SourceInfo sourceInfo,
+                                SourceInfo sourceInfo,
                                 ParsedPartCache *parts);
 static void skipWhitespace(ParseContext *ctx);
 static void skipComment(ParseContext *ctx);
@@ -235,20 +185,19 @@ static char *shrinkConv(char *start, char *end);
 
 pl2b_Program pl2b_parse(char *source,
                         uint16_t parseBufferSize,
-                        pl2b_Error *error) {
+                        Error *error) {
   ParseContext *context = createParseContext(source, parseBufferSize);
   if (context == NULL) {
-    pl2b_errPrintf(error,
-                   PL2B_ERR_MALLOC,
-                   (pl2b_SourceInfo) {},
-                   NULL,
-                   "allocation failure");
+    formatError(error,
+                (SourceInfo) { NULL, -1 },
+                PL2B_ERR_MALLOC,
+                "allocation failure");
     return (pl2b_Program) { NULL };
   }
 
   while (curChar(context) != '\0') {
     parseLine(context, error);
-    if (pl2b_isError(error)) {
+    if (isError(error)) {
       break;
     }
   }
@@ -275,7 +224,7 @@ static ParseContext *createParseContext(char *src,
   ret->listTail = NULL;
   ret->src = src;
   ret->srcIdx = 0;
-  ret->sourceInfo = pl2b_sourceInfo("<unknown-file>", 1);
+  ret->sourceInfo = (SourceInfo) { "<unknown-file>", 1 };
   ret->mode = PARSE_SINGLE_LINE;
 
   ret->parseBufferSize = parseBufferSize;
@@ -284,10 +233,10 @@ static ParseContext *createParseContext(char *src,
   return ret;
 }
 
-static void parseLine(ParseContext *ctx, pl2b_Error *error) {
+static void parseLine(ParseContext *ctx, Error *error) {
   if (curChar(ctx) == '?') {
     parseQuesMark(ctx, error);
-    if (pl2b_isError(error)) {
+    if (isError(error)) {
       return;
     }
   }
@@ -299,8 +248,8 @@ static void parseLine(ParseContext *ctx, pl2b_Error *error) {
         finishLine(ctx, error);
       }
       if (ctx->mode == PARSE_MULTI_LINE && curChar(ctx) == '\0') {
-        pl2b_errPrintf(error, PL2B_ERR_UNCLOSED_BEGIN, ctx->sourceInfo,
-                       NULL, "unclosed `?begin` block");
+        formatError(error, ctx->sourceInfo, PL2B_ERR_UNCLOSED_BEGIN,
+                    "unclosed `?begin` block");
       }
       if (curChar(ctx) == '\n') {
         nextChar(ctx);
@@ -310,14 +259,14 @@ static void parseLine(ParseContext *ctx, pl2b_Error *error) {
       skipComment(ctx);
     } else {
       parsePart(ctx, error);
-      if (pl2b_isError(error)) {
+      if (isError(error)) {
         return;
       }
     }
   }
 }
 
-static void parseQuesMark(ParseContext *ctx, pl2b_Error *error) {
+static void parseQuesMark(ParseContext *ctx, Error *error) {
   assert(curChar(ctx) == '?');
   nextChar(ctx);
 
@@ -335,12 +284,12 @@ static void parseQuesMark(ParseContext *ctx, pl2b_Error *error) {
     ctx->mode = PARSE_SINGLE_LINE;
     finishLine(ctx, error);
   } else {
-    pl2b_errPrintf(error, PL2B_ERR_UNKNOWN_QUES, ctx->sourceInfo,
-                   NULL, "unknown question mark operator: `%s`", cstr);
+    formatError(error, ctx->sourceInfo, PL2B_ERR_UNKNOWN_QUES,
+                "unknown question mark operator: `%s`", cstr);
   }
 }
 
-static void parsePart(ParseContext *ctx, pl2b_Error *error) {
+static void parsePart(ParseContext *ctx, Error *error) {
   Slice slice;
   _Bool isString;
   if (curChar(ctx) == '"' || curChar(ctx) == '\'') {
@@ -350,12 +299,12 @@ static void parsePart(ParseContext *ctx, pl2b_Error *error) {
     slice = parseId(ctx, error);
     isString = 0;
   }
-  if (pl2b_isError(error)) {
+  if (isError(error)) {
     return;
   }
 
   checkBufferSize(ctx, error);
-  if (pl2b_isError(error)) {
+  if (isError(error)) {
     return;
   }
 
@@ -363,7 +312,7 @@ static void parsePart(ParseContext *ctx, pl2b_Error *error) {
     (ParsedPartCache) { slice, isString };
 }
 
-static Slice parseId(ParseContext *ctx, pl2b_Error *error) {
+static Slice parseId(ParseContext *ctx, Error *error) {
   (void)error;
   char *start = curCharPos(ctx);
   while (isIdChar(curChar(ctx))) {
@@ -373,7 +322,7 @@ static Slice parseId(ParseContext *ctx, pl2b_Error *error) {
   return slice(start, end);
 }
 
-static Slice parseStr(ParseContext *ctx, pl2b_Error *error) {
+static Slice parseStr(ParseContext *ctx, Error *error) {
   assert(curChar(ctx) == '"' || curChar(ctx) == '\'');
   nextChar(ctx);
 
@@ -394,24 +343,24 @@ static Slice parseStr(ParseContext *ctx, pl2b_Error *error) {
   if (curChar(ctx) == '"' || curChar(ctx) == '\'') {
     nextChar(ctx);
   } else {
-    pl2b_errPrintf(error, PL2B_ERR_UNCLOSED_BEGIN, ctx->sourceInfo,
-                   NULL, "unclosed string literal");
+    formatError(error, ctx->sourceInfo, PL2B_ERR_UNCLOSED_BEGIN,
+                "unclosed string literal");
     return nullSlice();
   }
   return slice(start, end);
 }
 
-static void checkBufferSize(ParseContext *ctx, pl2b_Error *error) {
+static void checkBufferSize(ParseContext *ctx, Error *error) {
   if (ctx->parseBufferSize <= ctx->parseBufferUsage + 1) {
-    pl2b_errPrintf(error, PL2B_ERR_UNCLOSED_BEGIN, ctx->sourceInfo,
-                   NULL, "command parts exceed internal parsing buffer");
+    formatError(error, ctx->sourceInfo, PL2B_ERR_UNCLOSED_BEGIN,
+                "command parts exceed internal parsing buffer");
   }
 }
 
-static void finishLine(ParseContext *ctx, pl2b_Error *error) {
+static void finishLine(ParseContext *ctx, Error *error) {
   (void)error;
 
-  pl2b_SourceInfo sourceInfo = ctx->sourceInfo;
+  SourceInfo sourceInfo = ctx->sourceInfo;
   nextChar(ctx);
   if (ctx->parseBufferUsage == 0) {
     return;
@@ -425,21 +374,21 @@ static void finishLine(ParseContext *ctx, pl2b_Error *error) {
                                    ctx->sourceInfo, ctx->parseBuffer);
   }
   if (ctx->listTail == NULL) {
-    pl2b_errPrintf(error, PL2B_ERR_MALLOC, sourceInfo, 0,
-                   "failed allocating pl2b_Cmd");
+    formatError(error, sourceInfo, PL2B_ERR_MALLOC,
+                "failed allocating pl2b_Cmd");
   }
   memset(ctx->parseBuffer, 0, sizeof(Slice) * ctx->parseBufferSize);
   ctx->parseBufferUsage = 0;
 }
 
-static pl2b_Cmd *cmdFromSlices2(pl2b_SourceInfo sourceInfo,
+static pl2b_Cmd *cmdFromSlices2(SourceInfo sourceInfo,
                                 ParsedPartCache *parts) {
   return cmdFromSlices4(NULL, NULL, sourceInfo, parts);
 }
 
 static pl2b_Cmd *cmdFromSlices4(pl2b_Cmd *prev,
                                 pl2b_Cmd *next,
-                                pl2b_SourceInfo sourceInfo,
+                                SourceInfo sourceInfo,
                                 ParsedPartCache *parts) {
   uint16_t partCount = 0;
   for (; !isNullSlice(parts[partCount].slice); ++partCount);
@@ -574,21 +523,21 @@ static RunContext *createRunContext(pl2b_Program *program);
 static void destroyRunContext(RunContext *context);
 static _Bool cmdHandler(RunContext *context,
                         pl2b_Cmd *cmd,
-                        pl2b_Error *error);
+                        Error *error);
 static _Bool checkNextCmdRet(RunContext *context,
                              pl2b_Cmd *nextCmd,
-                             pl2b_Error *error);
+                             Error *error);
 
-void pl2b_run(pl2b_Program *program, pl2b_Error *error) {
+void pl2b_run(pl2b_Program *program, Error *error) {
   RunContext *context = createRunContext(program);
   if (context == NULL) {
-    pl2b_errPrintf(error, PL2B_ERR_MALLOC, pl2b_sourceInfo(NULL, 0),
-                   NULL, "run: cannot allocate memory for run context");
+    formatError(error, (SourceInfo){ NULL, -1 }, PL2B_ERR_MALLOC,
+                NULL, "run: cannot allocate memory for run context");
     return;
   }
 
   while (cmdHandler(context, context->curCmd, error)) {
-    if (pl2b_isError(error)) {
+    if (isError(error)) {
       break;
     }
   }
@@ -599,25 +548,25 @@ void pl2b_run(pl2b_Program *program, pl2b_Error *error) {
 void pl2b_runWithLanguage(pl2b_Program *program,
                           const pl2b_Language *language,
                           void *userContext,
-                          pl2b_Error *error) {
+                          Error *error) {
   assert(language != NULL);
 
   RunContext *context = createRunContext(program);
   if (context == NULL) {
-    pl2b_errPrintf(error, PL2B_ERR_MALLOC, pl2b_sourceInfo(NULL, 0),
-                   NULL, "run: cannot allocate memory for run context");
+    formatError(error, (SourceInfo) { NULL, -1 }, PL2B_ERR_MALLOC,
+                NULL, "run: cannot allocate memory for run context");
     return;
   }
 
   context->language = language;
   context->userContext = userContext;
-  if (pl2b_isError(error)) {
+  if (isError(error)) {
     destroyRunContext(context);
     return;
   }
 
   while (cmdHandler(context, context->curCmd, error)) {
-    if (pl2b_isError(error)) {
+    if (isError(error)) {
       break;
     }
   }
@@ -645,15 +594,15 @@ static void destroyRunContext(RunContext *context) {
 
 static _Bool cmdHandler(RunContext *context,
                         pl2b_Cmd *cmd,
-                        pl2b_Error *error) {
+                        Error *error) {
   if (cmd == NULL) {
     return 0;
   }
 
   if (!strcmp(cmd->cmd.str, "language")) {
-    pl2b_errPrintf(error, PL2B_ERR_NO_LANG, cmd->sourceInfo, NULL,
-                   "No need to use language command in PL2BK, "
-                   "languages are pre-loaded.");
+    formatError(error, cmd->sourceInfo, PL2B_ERR_NO_LANG,
+                "No need to use language command in PL2BK, "
+                "languages are pre-loaded.");
     return 0;
   } else if (!strcmp(cmd->cmd.str, "abort")) {
     return 0;
@@ -691,10 +640,10 @@ static _Bool cmdHandler(RunContext *context,
   }
 
   if (context->language->fallback == NULL) {
-    pl2b_errPrintf(error, PL2B_ERR_UNKNOWN_CMD, cmd->sourceInfo, NULL,
-                   "`%s` is not recognized as an internal or external "
-                   "command, operable program or batch file",
-                   cmd->cmd);
+    formatError(error, cmd->sourceInfo, PL2B_ERR_UNKNOWN_CMD,
+                "`%s` is not recognized as an internal or external "
+                "command, operable program or batch file",
+                cmd->cmd);
     return 0;
   }
 
@@ -710,8 +659,8 @@ static _Bool cmdHandler(RunContext *context,
 
 static _Bool checkNextCmdRet(RunContext *context,
                              pl2b_Cmd *nextCmd,
-                             pl2b_Error *error) {
-  if (pl2b_isError(error)) {
+                             Error *error) {
+  if (isError(error)) {
     return 0;
   }
   if (nextCmd == NULL) {
@@ -721,3 +670,4 @@ static _Bool checkNextCmdRet(RunContext *context,
   context->curCmd = nextCmd;
   return 1;
 }
+

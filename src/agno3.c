@@ -12,7 +12,7 @@
 typedef struct st_flask_impl {
   ScriptingContext scriptingContext;
   
-  HttpRequest request;
+  HttpRequest *request;
 
   int code;
   const char *statusText;
@@ -22,7 +22,7 @@ typedef struct st_flask_impl {
   HtmlDoc *curDoc;
 } FlaskImpl;
 
-Flask createFlask(HttpRequest request) {
+Flask createFlask(HttpRequest *request) {
   FlaskImpl *flaskImpl = (FlaskImpl*)malloc(sizeof(FlaskImpl));
   
   initScriptingContext(&flaskImpl->scriptingContext);
@@ -44,64 +44,64 @@ Flask createFlask(HttpRequest request) {
 static pl2b_Cmd* setStatus(pl2b_Program *program,
                            void *context,
                            pl2b_Cmd *command,
-                           pl2b_Error *error);
+                           Error *error);
 static pl2b_Cmd* setHeader(pl2b_Program *program,
                            void *context,
                            pl2b_Cmd *command,
-                           pl2b_Error *error);
+                           Error *error);
 
 static pl2b_Cmd *handleScript(pl2b_Program *program,
                               void *context,
                               pl2b_Cmd *command,
-                              pl2b_Error *error);
+                              Error *error);
 static _Bool routeOpenTag(pl2b_CmdPart cmdPart);
 static _Bool routeCloseTag(pl2b_CmdPart cmdPart);
 static pl2b_Cmd *handleOpenTag(pl2b_Program *program,
                                void *context,
                                pl2b_Cmd *command,
-                               pl2b_Error *error);
+                               Error *error);
 static pl2b_Cmd *handleCloseTag(pl2b_Program *program,
                                 void *context,
                                 pl2b_Cmd *command,
-                                pl2b_Error *error);
+                                Error *error);
 
 static pl2b_Cmd *handleSet(pl2b_Program *program,
                            void *context,
                            pl2b_Cmd *command,
-                           pl2b_Error *error);
+                           Error *error);
 static pl2b_Cmd *handleCall(pl2b_Program *program,
                             void *context,
                             pl2b_Cmd *command,
-                            pl2b_Error *error);
+                            Error *error);
 static pl2b_Cmd *handleIf(pl2b_Program *program,
                           void *context,
                           pl2b_Cmd *command,
-                          pl2b_Error *error);
+                          Error *error);
 static pl2b_Cmd *handleWhile(pl2b_Program *program,
                              void *context,
                              pl2b_Cmd *command,
-                             pl2b_Error *error);
+                             Error *error);
 static pl2b_Cmd *handleBreak(pl2b_Program *program,
                              void *context,
                              pl2b_Cmd *command,
-                             pl2b_Error *error);
+                             Error *error);
 static pl2b_Cmd *handleProc(pl2b_Program *program,
                             void *context,
                             pl2b_Cmd *command,
-                            pl2b_Error *error);
+                            Error *error);
 static pl2b_Cmd *handleEnd(pl2b_Program *program,
                            void *context,
                            pl2b_Cmd *command,
-                           pl2b_Error *error);
+                           Error *error);
 static pl2b_Cmd *handleAbort(pl2b_Program *program,
                              void *context,
                              pl2b_Cmd *command,
-                             pl2b_Error *error);
+                             Error *error);
 
 static pl2b_Cmd *maybeHandleCustomTag(pl2b_Program *program,
                                       void *context,
                                       pl2b_Cmd *command,
-                                      pl2b_Error *error);
+                                      Error *error);
 
 const pl2b_Language *getAgNO3(void) {
   static pl2b_PCallCmd cmds[] = {
@@ -140,12 +140,12 @@ const pl2b_Language *getAgNO3(void) {
 static pl2b_Cmd* setStatus(pl2b_Program *program,
                            void *context,
                            pl2b_Cmd *command,
-                           pl2b_Error *error) {
+                           Error *error) {
   (void)program;
 
   if (pl2b_argsLen(command) != 2) {
-    pl2b_errPrintf(error, PL2B_ERR_USER, command->sourceInfo, NULL,
-                   "status: expecting 2 arguments");
+    formatError(error, command->sourceInfo, -1,
+                "status: expecting 2 arguments");
     return NULL;
   }
 
@@ -156,9 +156,9 @@ static pl2b_Cmd* setStatus(pl2b_Program *program,
 
   int statusCode = atoi(statusCodeStr);
   if (statusCode == 0) {
-    pl2b_errPrintf(error, PL2B_ERR_USER, command->sourceInfo,
-                   "status: invalid status code: %s",
-                   statusCodeStr);
+    formatError(error, command->sourceInfo, -1,
+               "status: invalid status code: %s",
+               statusCodeStr);
     return NULL;
   }
 
@@ -171,12 +171,12 @@ static pl2b_Cmd* setStatus(pl2b_Program *program,
 static pl2b_Cmd* setHeader(pl2b_Program *program,
                            void *context,
                            pl2b_Cmd *command,
-                           pl2b_Error *error) {
+                           Error *error) {
   (void)program;
 
   if (pl2b_argsLen(command) != 2) {
-    pl2b_errPrintf(error, PL2B_ERR_USER, command->sourceInfo, NULL,
-                   "header: expecting 2 arguments");
+    formatError(error, command->sourceInfo, -1,
+               "header: expecting 2 arguments");
     return NULL;
   }
 
@@ -186,8 +186,8 @@ static pl2b_Cmd* setHeader(pl2b_Program *program,
   // const char *valueStr = command->args[1].str;
 
   if (stricmp(keyStr, "Content-Length")) {
-    pl2b_errPrintf(error, PL2B_ERR_USER, command->sourceInfo, NULL,
-                   "header: cannot set `Content-Length` manually");
+    formatError(error, command->sourceInfo, -1,
+               "header: cannot set `Content-Length` manually");
     return NULL;
   }
 
@@ -197,8 +197,8 @@ static pl2b_Cmd* setHeader(pl2b_Program *program,
   for (size_t i = 0; i < ccVecLen(&flask->headers); i++) {
     StringPair *pair = (StringPair*)ccVecNth(&flask->headers, i);
     if (stricmp(pair->first, key)) {
-      pl2b_errPrintf(error, PL2B_ERR_USER, command->sourceInfo, NULL,
-                     "header: duplicate header: %s", key);
+      formatError(error, command->sourceInfo, -1,
+                  "header: duplicate header: %s", key);
       free(key);
       free(value);
       return NULL;
@@ -214,7 +214,7 @@ static pl2b_Cmd* setHeader(pl2b_Program *program,
 static pl2b_Cmd *handleScript(pl2b_Program *program,
                               void *context,
                               pl2b_Cmd *command,
-                              pl2b_Error *error) {
+                              Error *error) {
   // TODO
   (void)program;
   (void)context;
@@ -238,7 +238,7 @@ static _Bool routeCloseTag(pl2b_CmdPart cmdPart) {
 static pl2b_Cmd *handleOpenTag(pl2b_Program *program,
                                void *context,
                                pl2b_Cmd *command,
-                               pl2b_Error *error) {
+                               Error *error) {
   // TODO
   (void)program;
   (void)context;
@@ -250,7 +250,7 @@ static pl2b_Cmd *handleOpenTag(pl2b_Program *program,
 static pl2b_Cmd *handleCloseTag(pl2b_Program *program,
                                 void *context,
                                 pl2b_Cmd *command,
-                                pl2b_Error *error) {
+                                Error *error) {
   // TODO
   (void)program;
   (void)context;
@@ -262,7 +262,7 @@ static pl2b_Cmd *handleCloseTag(pl2b_Program *program,
 static pl2b_Cmd *handleSet(pl2b_Program *program,
                            void *context,
                            pl2b_Cmd *command,
-                           pl2b_Error *error) {
+                           Error *error) {
   // TODO
   (void)program;
   (void)context;
@@ -274,7 +274,7 @@ static pl2b_Cmd *handleSet(pl2b_Program *program,
 static pl2b_Cmd *handleCall(pl2b_Program *program,
                             void *context,
                             pl2b_Cmd *command,
-                            pl2b_Error *error) {
+                            Error *error) {
   // TODO
   (void)program;
   (void)context;
@@ -286,7 +286,7 @@ static pl2b_Cmd *handleCall(pl2b_Program *program,
 static pl2b_Cmd *handleIf(pl2b_Program *program,
                           void *context,
                           pl2b_Cmd *command,
-                          pl2b_Error *error) {
+                          Error *error) {
   // TODO
   (void)program;
   (void)context;
@@ -298,7 +298,7 @@ static pl2b_Cmd *handleIf(pl2b_Program *program,
 static pl2b_Cmd *handleWhile(pl2b_Program *program,
                              void *context,
                              pl2b_Cmd *command,
-                             pl2b_Error *error) {
+                             Error *error) {
   // TODO
   (void)program;
   (void)context;
@@ -310,7 +310,7 @@ static pl2b_Cmd *handleWhile(pl2b_Program *program,
 static pl2b_Cmd *handleBreak(pl2b_Program *program,
                              void *context,
                              pl2b_Cmd *command,
-                             pl2b_Error *error) {
+                             Error *error) {
   // TODO
   (void)program;
   (void)context;
@@ -322,7 +322,7 @@ static pl2b_Cmd *handleBreak(pl2b_Program *program,
 static pl2b_Cmd *handleProc(pl2b_Program *program,
                             void *context,
                             pl2b_Cmd *command,
-                            pl2b_Error *error) {
+                            Error *error) {
   // TODO
   (void)program;
   (void)context;
@@ -334,7 +334,7 @@ static pl2b_Cmd *handleProc(pl2b_Program *program,
 static pl2b_Cmd *handleEnd(pl2b_Program *program,
                            void *context,
                            pl2b_Cmd *command,
-                           pl2b_Error *error) {
+                           Error *error) {
   // TODO
   (void)program;
   (void)context;
@@ -346,7 +346,7 @@ static pl2b_Cmd *handleEnd(pl2b_Program *program,
 static pl2b_Cmd *handleAbort(pl2b_Program *program,
                              void *context,
                              pl2b_Cmd *command,
-                             pl2b_Error *error) {
+                             Error *error) {
   // TODO
   (void)program;
   (void)context;
@@ -358,7 +358,7 @@ static pl2b_Cmd *handleAbort(pl2b_Program *program,
 static pl2b_Cmd *maybeHandleCustomTag(pl2b_Program *program,
                                       void *context,
                                       pl2b_Cmd *command,
-                                      pl2b_Error *error) {
+                                      Error *error) {
   // TODO
   (void)program;
   (void)context;

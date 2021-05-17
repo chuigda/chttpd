@@ -44,6 +44,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "error.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,54 +59,22 @@ typedef enum e_pl2b_cmp_result {
   PL2B_CMP_NONE    = 255 /* not comparable */
 } pl2b_CmpResult;
 
-/*** ----------------------- pl2b_SourceInfo  ---------------------- ***/
-
-typedef struct st_pl2b_source_info {
-  const char *fileName;
-  uint16_t line;
-} pl2b_SourceInfo;
-
-pl2b_SourceInfo pl2b_sourceInfo(const char *fileName, uint16_t line);
-
-/*** -------------------------- pl2b_Error ------------------------- ***/
-
-typedef struct st_pl2b_error {
-  void *extraData;
-  pl2b_SourceInfo sourceInfo;
-  uint16_t errorCode;
-  uint16_t errorBufferSize;
-  char reason[0];
-} pl2b_Error;
+/*** -------------------------- Error code ------------------------- ***/
 
 typedef enum e_pl2b_error_code {
-  PL2B_ERR_NONE           = 0,  /* no error */
-  PL2B_ERR_GENERAL        = 1,  /* general hard error */
-  PL2B_ERR_PARSEBUF       = 2,  /* parse buffer exceeded */
-  PL2B_ERR_UNCLOSED_STR   = 3,  /* unclosed string literal */
-  PL2B_ERR_UNCLOSED_BEGIN = 4,  /* unclosed ?begin block */
-  PL2B_ERR_EMPTY_CMD      = 5,  /* empty command */
-  PL2B_ERR_SEMVER_PARSE   = 6,  /* semver parse error */
-  PL2B_ERR_UNKNOWN_QUES   = 7,  /* unknown question mark command */
-  PL2B_ERR_LOAD_LANG      = 8,  /* error loading language */
-  PL2B_ERR_NO_LANG        = 9,  /* language not loaded */
-  PL2B_ERR_UNKNOWN_CMD    = 10, /* unknown command */
-  PL2B_ERR_MALLOC         = 11, /* malloc failure*/
-
-  PL2B_ERR_USER           = 100 /* generic user error */
+  PL2B_ERR_NONE           = 980,  /* no error */
+  PL2B_ERR_GENERAL        = 981,  /* general hard error */
+  PL2B_ERR_PARSEBUF       = 982,  /* parse buffer exceeded */
+  PL2B_ERR_UNCLOSED_STR   = 983,  /* unclosed string literal */
+  PL2B_ERR_UNCLOSED_BEGIN = 984,  /* unclosed ?begin block */
+  PL2B_ERR_EMPTY_CMD      = 985,  /* empty command */
+  PL2B_ERR_SEMVER_PARSE   = 986,  /* semver parse error */
+  PL2B_ERR_UNKNOWN_QUES   = 987,  /* unknown question mark command */
+  PL2B_ERR_LOAD_LANG      = 988,  /* error loading language */
+  PL2B_ERR_NO_LANG        = 989,  /* language not loaded */
+  PL2B_ERR_UNKNOWN_CMD    = 990,  /* unknown command */
+  PL2B_ERR_MALLOC         = 991   /* malloc failure*/
 } pl2b_ErrorCode;
-
-pl2b_Error *pl2b_errorBuffer(uint16_t strBufferSize);
-
-void pl2b_errPrintf(pl2b_Error *error,
-                    uint16_t errorCode,
-                    pl2b_SourceInfo sourceInfo,
-                    void *extraData,
-                    const char *fmt,
-                    ...);
-
-void pl2b_dropError(pl2b_Error *error);
-
-_Bool pl2b_isError(pl2b_Error *error);
 
 /*** --------------------------- pl2b_Cmd -------------------------- ***/
 
@@ -121,18 +91,18 @@ typedef struct st_pl2b_cmd {
   struct st_pl2b_cmd *prev;
   struct st_pl2b_cmd *next;
 
-  pl2b_SourceInfo sourceInfo;
+  SourceInfo sourceInfo;
   pl2b_CmdPart cmd;
   pl2b_CmdPart args[0];
 } pl2b_Cmd;
 
-pl2b_Cmd *pl2b_cmd3(pl2b_SourceInfo sourceInfo,
+pl2b_Cmd *pl2b_cmd3(SourceInfo sourceInfo,
                     pl2b_CmdPart cmd,
                     pl2b_CmdPart args[]);
 
 pl2b_Cmd *pl2b_cmd5(pl2b_Cmd *prev,
                     pl2b_Cmd *next,
-                    pl2b_SourceInfo sourceInfo,
+                    SourceInfo sourceInfo,
                     pl2b_CmdPart cmd,
                     pl2b_CmdPart args[]);
 
@@ -147,7 +117,7 @@ typedef struct st_pl2b_program {
 void pl2b_initProgram(pl2b_Program *program);
 pl2b_Program pl2b_parse(char *source,
                         uint16_t parseBufferSize,
-                        pl2b_Error *error);
+                        Error *error);
 void pl2b_dropProgram(pl2b_Program *program);
 
 /*** ------------------------ pl2b_Extension ----------------------- ***/
@@ -155,10 +125,10 @@ void pl2b_dropProgram(pl2b_Program *program);
 typedef pl2b_Cmd *(pl2b_PCallCmdStub)(pl2b_Program *program,
                                       void *context,
                                       pl2b_Cmd *command,
-                                      pl2b_Error *error);
+                                      Error *error);
 typedef _Bool (pl2b_CmdRouterStub)(pl2b_CmdPart cmd);
 
-typedef void *(pl2b_InitStub)(pl2b_Error *error);
+typedef void *(pl2b_InitStub)(Error *error);
 typedef void (pl2b_AtexitStub)(void *context);
 typedef void (pl2b_CmdCleanupStub)(void *cmdExtra);
 
@@ -188,7 +158,7 @@ typedef struct st_pl2b_langauge {
 void pl2b_runWithLanguage(pl2b_Program *program,
                           const pl2b_Language *language,
                           void *userContext,
-                          pl2b_Error *error);
+                          Error *error);
 
 #ifdef __cplusplus
 } /* extern "C" */

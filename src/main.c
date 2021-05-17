@@ -26,6 +26,7 @@ typedef struct st_http_input_context {
 
 static int httpMainLoop(const Config *config);
 static void *httpHandler(void* context);
+static void handleCGI(const char *cgiPath);
 
 int main(int argc, const char *argv[]) {
   if (argc != 2) {
@@ -55,20 +56,20 @@ int main(int argc, const char *argv[]) {
   Config config;
   initConfig(&config);
 
-  pl2b_Error *error = pl2b_errorBuffer(SMALL_BUFFER_SIZE);
+  Error *error = errorBuffer(SMALL_BUFFER_SIZE);
   pl2b_Program cfgProgram =
     pl2b_parse(buffer, SMALL_BUFFER_SIZE, error);
-  if (pl2b_isError(error)) {
+  if (isError(error)) {
     LOG_FATAL("cannot parse config file \"%s\": %d: %s",
-              argv[1], error->errorCode, error->reason);
+              argv[1], error->errCode, error->errorBuffer);
     return -1;
   }
 
   const pl2b_Language *cfgLang = getCfgLanguage();
   pl2b_runWithLanguage(&cfgProgram, cfgLang, &config, error);
-  if (pl2b_isError(error)) {
+  if (isError(error)) {
     LOG_FATAL("cannot evaluate config file \"%s\": %d: %s",
-              argv[1], error->errorCode, error->reason);
+              argv[1], error->errCode, error->errorBuffer);
     return -1;
   }
 
@@ -86,7 +87,7 @@ int main(int argc, const char *argv[]) {
   int ret = httpMainLoop(&config);
 
   dropConfig(&config);
-  pl2b_dropError(error);
+  dropError(error);
   pl2b_dropProgram(&cfgProgram);
   free(buffer);
 
@@ -121,7 +122,7 @@ static int httpMainLoop(const Config *config) {
     return -1;
   }
 
-  size_t workerId;
+  size_t workerId = 0;
 
   listen(fdSock, config->maxPending);
 
