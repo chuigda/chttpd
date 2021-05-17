@@ -1,6 +1,8 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <stdlib.h>
+
 /* Used to indicate generic parameter */
 #ifndef TP
 #define TP(...)
@@ -26,15 +28,16 @@ typedef enum e_log_level {
   LL_FATAL = 4
 } LogLevel;
 
-void chttpd_log(LogLevel logLevel,
-                const char *fileName,
-                int line,
-                const char *func,
-                const char *fmt,
-                ...);
+void setWorkerId(size_t workerId);
+void chttpdLog(LogLevel logLevel,
+               const char *fileName,
+               int line,
+               const char *func,
+               const char *fmt,
+               ...);
 
 #define LOG(LL, FMT, ...) \
-  { chttpd_log(LL, __FILE__, __LINE__, __func__, FMT, ##__VA_ARGS__); }
+  { chttpdLog(LL, __FILE__, __LINE__, __func__, FMT, ##__VA_ARGS__); }
 
 #define LOG_DBG(FMT, ...) { LOG(LL_DEBUG, FMT, ##__VA_ARGS__); }
 #define LOG_INFO(FMT, ...) { LOG(LL_INFO, FMT, ##__VA_ARGS__); }

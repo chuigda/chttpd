@@ -19,11 +19,6 @@ void initConfig(Config *config) {
 }
 
 void dropConfig(Config *config) {
-  for (size_t i = 0; i < ccVecLen(&config->routes); i++) {
-    Route *route = (Route*)ccVecNth(&config->routes, i);
-    free(route->path);
-    free(route->handlerPath);
-  }
   ccVecDestroy(&config->routes);
 }
 

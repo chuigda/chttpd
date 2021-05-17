@@ -19,6 +19,7 @@
 #define SMALL_BUFFER_SIZE 4096
 
 typedef struct st_http_input_context {
+  size_t workerId;
   const Config *config;
   int fdConnection;
 } HttpInputContext;
@@ -120,6 +121,8 @@ static int httpMainLoop(const Config *config) {
     return -1;
   }
 
+  size_t workerId;
+
   listen(fdSock, config->maxPending);
 
   struct sockaddr_in clientAddr;
@@ -142,6 +145,7 @@ static int httpMainLoop(const Config *config) {
       LOG_ERR("failed allocating thread context buffer");
       continue;
     }
+    inputContext->workerId = workerId++;
     inputContext->config = config;
     inputContext->fdConnection = fdConnection;
 
@@ -202,6 +206,7 @@ static const char *GENERAL_HEADERS =
 
 static void* httpHandler(void *context) {
   HttpInputContext *inputContext = (HttpInputContext*)context;
+  setWorkerId(inputContext->workerId);
   const Config *config = inputContext->config;
   int fd = inputContext->fdConnection;
 
@@ -221,15 +226,15 @@ static void* httpHandler(void *context) {
            ((StringPair*)ccVecNth(&request->params, 0))->second);
   for (size_t i = 1; i < ccVecLen(&request->params); i++) {
     StringPair *param = (StringPair*)ccVecNth(&request->params, i);
-    LOG_INFO(" ?%s=%s", param->first, param->second);
+    LOG_DBG(" ?%s=%s", param->first, param->second);
   }
 
   for (size_t i = 0; i < ccVecLen(&request->headers); i++) {
     StringPair *header = (StringPair*)ccVecNth(&request->headers, i);
-    LOG_INFO(" %s: \"%s\"", header->first, header->second);
+    LOG_DBG(" %s: \"%s\"", header->first, header->second);
   }
   if (request->contentLength != 0) {
-    LOG_INFO("body:\n\n%s", request->body);
+    LOG_DBG("body:\n\n%s", request->body);
   }
 
   dropHttpRequest(request);

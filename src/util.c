@@ -50,12 +50,18 @@ const char *log_level_texts[] = {
   [LL_FATAL] = "fatal"
 };
 
-void chttpd_log(LogLevel logLevel,
-                const char *fileName,
-                int line,
-                const char *func,
-                const char *fmt,
-                ...) {
+static _Thread_local ssize_t workerId = -1;
+
+void setWorkerId(size_t newWorkerId) {
+  workerId = newWorkerId;
+}
+
+void chttpdLog(LogLevel logLevel,
+               const char *fileName,
+               int line,
+               const char *func,
+               const char *fmt,
+               ...) {
   static _Thread_local char *buffer = NULL;
   static _Thread_local size_t bufferSize = 0;
 
@@ -74,12 +80,24 @@ void chttpd_log(LogLevel logLevel,
   vsprintf(buffer, fmt, va);
   va_end(va);
 
-  fprintf(stderr,
-          "\033[%sm [ %s %s:%s:%d ] %s \033[0m\n",
-          log_level_controls[logLevel],
-          log_level_texts[logLevel],
-          fileName,
-          func,
-          line,
-          buffer);
+  if (workerId != -1) {
+    fprintf(stderr,
+            "\033[%sm [ %s %s:%s:%d ] <%d> %s \033[0m\n",
+            log_level_controls[logLevel],
+            log_level_texts[logLevel],
+            fileName,
+            func,
+            line,
+            workerId,
+            buffer);
+  } else {
+    fprintf(stderr,
+            "\033[%sm [ %s %s:%s:%d ] %s \033[0m\n",
+            log_level_controls[logLevel],
+            log_level_texts[logLevel],
+            fileName,
+            func,
+            line,
+            buffer);
+  }
 }
