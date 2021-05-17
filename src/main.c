@@ -253,13 +253,12 @@ static void* httpHandler(void *context) {
     fputs(ERROR_PAGE_404_CONTENT, fp);
   } else {
     fputs(ERROR_PAGE_500_HEAD, fp);
-    fprintf(fp, "Content-Length: %zu\r\n",
-            strlen(ERROR_PAGE_500_CONTENT_PART1)
-            + strlen(error->errorBuffer)
-            + strlen(ERROR_PAGE_500_CONTENT_PART2));
     fputs(GENERAL_HEADERS, fp);
     fputs(ERROR_PAGE_500_CONTENT_PART1, fp);
-    fputs(error->errorBuffer, fp);
+    fprintf(fp, "%s:%d: %s",
+            error->sourceInfo.sourceFile,
+            error->sourceInfo.line,
+            error->errorBuffer);
     fputs(ERROR_PAGE_500_CONTENT_PART2, fp);
   }
 

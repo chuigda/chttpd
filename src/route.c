@@ -99,6 +99,7 @@ static void handleStatic(const char *filePath,
 
   fprintf(fp,
           "HTTP/1.1 200 OK\r\n"
+          "Connection: close\r\n"
           "Content-Encoding: identity\r\n"
           "Content-Type: %s\r\n"
           "Content-Length: %zi\r\n\r\n",
