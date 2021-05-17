@@ -232,8 +232,7 @@ static void* httpHandler(void *context) {
     LOG_INFO("body:\n\n%s", request->body);
   }
 
-  // TODO
-  // dropHttpRequest(request);
+  dropHttpRequest(request);
 
   const char *specificError = "incorrect PL2 syntax.";
 

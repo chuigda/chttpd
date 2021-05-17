@@ -23,6 +23,21 @@ const char *HTTP_CODE_NAMES[] = {
   [HTTP_CODE_SERVER_ERR] = "Internal Server Error"
 };
 
+void dropHttpRequest(HttpRequest *request) {
+  for (size_t i = 0; i < ccVecLen(&request->headers); i++) {
+    StringPair *header = (StringPair*)ccVecNth(&request->headers, i);
+    dropStringPair(*header);
+  }
+  ccVecDestroy(&request->headers);
+
+  for (size_t i = 0; i < ccVecLen(&request->params); i++) {
+    StringPair *param = (StringPair*)ccVecNth(&request->params, i);
+    dropStringPair(*param);
+  }
+  ccVecDestroy(&request->params);
+  free(request);
+}
+
 static char *readHttpLine(FILE *fp);
 static _Bool parseHttpFirstLine(const char *line,
                                 HttpMethod *method,
@@ -47,6 +62,7 @@ HttpRequest *readHttpRequest(FILE *fp) {
   if (!parseHttpFirstLine(line, &method, &params)) {
     goto free_params_ret;
   }
+  free(line);
 
   ccVec TP(StringPair) headers;
   ccVecInit(&headers, sizeof(StringPair));
@@ -64,6 +80,7 @@ HttpRequest *readHttpRequest(FILE *fp) {
     if (!parseHttpHeaderLine(line, &headers)) {
       goto free_headers_ret;
     }
+    free(line);
   }
 
   size_t contentLength = 0;
@@ -111,7 +128,6 @@ free_headers_ret:
   for (size_t i = 0; i < ccVecLen(&headers); i++) {
     StringPair *header = (StringPair*)ccVecNth(&headers, i);
     dropStringPair(*header);
-    free(header);
   }
   ccVecDestroy(&headers);
   /* fallthrough */
@@ -120,7 +136,6 @@ free_params_ret:
   for (size_t i = 0; i < ccVecLen(&params); i++) {
     StringPair *param = (StringPair*)ccVecNth(&params, i);
     dropStringPair(*param);
-    free(param);
   }
   ccVecDestroy(&params);
   free(line);
@@ -205,7 +220,7 @@ static _Bool parseHttpHeaderLine(const char *line,
   }
 
   size_t nameSize = it - line;
-  char *name = malloc(nameSize + 1);
+  char *name = (char*)malloc(nameSize + 1);
   strncpy(name, line, nameSize);
   name[nameSize] = '\0';
 
@@ -215,14 +230,12 @@ static _Bool parseHttpHeaderLine(const char *line,
   while (*it2 != '\r') it2++;
 
   size_t valueSize = it2 - it;
-  char *value = malloc(valueSize + 1);
+  char *value = (char*)malloc(valueSize + 1);
   strncpy(value, it, valueSize);
   value[valueSize] = '\0';
 
-  StringPair *header = (StringPair*)malloc(sizeof(StringPair));
-  header->first = name;
-  header->second = value;
-  ccVecPushBack(headers, header);
+  StringPair header = (StringPair) { name, value };
+  ccVecPushBack(headers, &header);
 
   return 1;
 }
@@ -247,11 +260,8 @@ static _Bool parseQueryPath(const char *it1,
   strncpy(path, it1, pathSize);
   path[pathSize] = '\0';
 
-  StringPair *pair = (StringPair*)malloc(sizeof(StringPair));
-  pair->first = copyString("!!reserved0");
-  pair->second = path;
-
-  ccVecPushBack(params, pair);
+  StringPair pair = (StringPair) { copyString("!!reserved0"), path };
+  ccVecPushBack(params, &pair);
 
   if (*it3 != '?') {
     return 1;
@@ -282,10 +292,8 @@ static _Bool parseQueryPath(const char *it1,
     strncpy(value, it3 + 1, valueSize);
     value[valueSize] = '\0';
     
-    StringPair *param = (StringPair*)malloc(sizeof(StringPair));
-    param->first = key;
-    param->second = value;
-    ccVecPushBack(params, param);
+    StringPair param = (StringPair) { key, value };
+    ccVecPushBack(params, &param);
 
     if (*it4 != '&') {
       return 1;

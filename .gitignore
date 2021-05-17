@@ -19,3 +19,4 @@ chttpd
 /*.cfg
 /*.pl2
 core
+*.log
