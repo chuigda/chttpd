@@ -20,7 +20,8 @@ all_deps: \
 	cfglang \
 	html \
 	agno3 \
-	http
+	http \
+	route
 
 # All headers
 HEADERS = include/agno3.h \
@@ -31,6 +32,7 @@ HEADERS = include/agno3.h \
 	include/http.h \
 	include/http_base.h \
 	include/pl2b.h \
+	include/route.h \
 	include_ext/cc_defs.h \
 	include_ext/cc_list.h \
 	include_ext/cc_vec.h
@@ -55,7 +57,20 @@ chttpd: all_deps src/main.c
 		${PL2_OBJECTS} \
 		${UTIL_OBJECTS} \
 		${CCLIB_OBJECTS} \
+		${ROUTE_OBJECTS} \
 		-o chttpd -lpthread
+
+# Build Route objects
+ROUTE_OBJECTS := out/route.o
+
+route: route_prompt ${ROUTE_OBJECTS}
+
+route_prompt:
+	@echo Building request router
+
+out/route.o: src/route.c ${HEADERS}
+	@$(LOG) CC src/route.c
+	@$(CC) src/route.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/route.o
 
 # Build HTTP objects
 HTTP_OBJECTS := out/http.o

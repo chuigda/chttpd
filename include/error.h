@@ -26,7 +26,13 @@ void formatError(Error *error,
                  const char *fmt,
                  ...);
 
-#define QUICK_ERROR(ERR, CODE, FMT, ...) \
+#define QUICK_ERROR(ERR, CODE, FMT) \
+  { formatError(ERR, \
+                (SourceInfo) { __FILE__, __LINE__ }, \
+                CODE, \
+                FMT); }
+
+#define QUICK_ERROR2(ERR, CODE, FMT, ...) \
   { formatError(ERR, \
                 (SourceInfo) { __FILE__, __LINE__ }, \
                 CODE, \
@@ -35,4 +41,3 @@ void formatError(Error *error,
                ); }
 
 #endif /* ERROR_H */
-

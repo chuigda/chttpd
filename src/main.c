@@ -13,6 +13,7 @@
 #include "cfglang.h"
 #include "file_util.h"
 #include "http.h"
+#include "route.h"
 #include "util.h"
 
 #define LARGE_BUFFER_SIZE 65536
@@ -238,19 +239,29 @@ static void* httpHandler(void *context) {
     LOG_DBG("body:\n\n%s", request->body);
   }
 
+  Error *error = errorBuffer(SMALL_BUFFER_SIZE);
+
+  routeAndHandle(config, request, fp, error);
   dropHttpRequest(request);
 
-  const char *specificError = "incorrect PL2 syntax.";
-
-  fputs(ERROR_PAGE_500_HEAD, fp);
-  fprintf(fp, "Content-Length: %zu\r\n",
-          strlen(ERROR_PAGE_500_CONTENT_PART1)
-          + strlen(specificError)
-          + strlen(ERROR_PAGE_500_CONTENT_PART2));
-  fputs(GENERAL_HEADERS, fp);
-  fputs(ERROR_PAGE_500_CONTENT_PART1, fp);
-  fputs(specificError, fp);
-  fputs(ERROR_PAGE_500_CONTENT_PART2, fp);
+  if (!isError(error)) {
+  } else if (error->errCode == 404) {
+    fputs(ERROR_PAGE_404_HEAD, fp);
+    fprintf(fp, "Content-Length: %zu\r\n",
+            strlen(ERROR_PAGE_404_CONTENT));
+    fputs(GENERAL_HEADERS, fp);
+    fputs(ERROR_PAGE_404_CONTENT, fp);
+  } else {
+    fputs(ERROR_PAGE_500_HEAD, fp);
+    fprintf(fp, "Content-Length: %zu\r\n",
+            strlen(ERROR_PAGE_500_CONTENT_PART1)
+            + strlen(error->errorBuffer)
+            + strlen(ERROR_PAGE_500_CONTENT_PART2));
+    fputs(GENERAL_HEADERS, fp);
+    fputs(ERROR_PAGE_500_CONTENT_PART1, fp);
+    fputs(error->errorBuffer, fp);
+    fputs(ERROR_PAGE_500_CONTENT_PART2, fp);
+  }
 
 close_fp_ret:
   fflush(fp);

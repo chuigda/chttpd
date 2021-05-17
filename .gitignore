@@ -20,3 +20,7 @@ chttpd
 /*.pl2
 core
 *.log
+
+*.html
+*.js
+*.css
