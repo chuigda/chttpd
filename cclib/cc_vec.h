@@ -92,6 +92,12 @@ CCFN(cc_vec_empty) (const CCTY(cc_vec) *vec);
 void
 CCFN(cc_vec_shrink) (CCTY(cc_vec) *vec);
 
+void*
+CCFN(cc_vec_data) (CCTY(cc_vec) *vec);
+
+const void*
+CCFN(cc_vec_data_const) (const CCTY(cc_vec) *vec);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

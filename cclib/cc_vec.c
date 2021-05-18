@@ -189,3 +189,14 @@ _Bool
 CCFN(cc_vec_empty) (const CC_VEC *vec) {
     return vec->usage == vec->start;
 }
+
+void*
+CCFN(cc_vec_data) (CC_VEC *vec) {
+  return vec->start;
+}
+
+const void*
+CCFN(cc_vec_data_const) (const CC_VEC *vec) {
+  return vec->start;
+}
+

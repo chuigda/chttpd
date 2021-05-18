@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "chttpd_cfg.h"
 #include "error.h"
 #include "file_util.h"
 #include "util.h"
@@ -14,18 +15,18 @@ static void handleStatic(const char *filePath,
                          Error *error);
 static void handleCGI(const char *cgiProgram,
                       const HttpRequest *request,
+                      const char *clientAddr,
                       FILE *fp,
                       Error *error);
 
 void routeAndHandle(const Config *config,
                     const HttpRequest *request,
+                    const char *clientAddr,
                     FILE *fp,
                     Error *error) {
-  const char *path =
-    ((const StringPair*)ccVecNth(&request->params, 0))->second;
   for (size_t i = 0; i < ccVecLen(&config->routes); i++) {
     const Route *route = (Route*)ccVecNth(&config->routes, i);
-    if (!strcmp(path, route->path)
+    if (!strcmp(request->requestPath, route->path)
         && request->method == route->httpMethod) {
       switch (route->handlerType) {
       case HDLR_SCRIPT:
@@ -35,7 +36,7 @@ void routeAndHandle(const Config *config,
         handleStatic(route->handlerPath, fp, error);
         break;
       case HDLR_CGI:
-        handleCGI(route->handlerPath, request, fp, error);
+        handleCGI(route->handlerPath, request, clientAddr, fp, error);
         break;
       }
       return;
@@ -99,11 +100,12 @@ static void handleStatic(const char *filePath,
 
   fprintf(fp,
           "HTTP/1.1 200 OK\r\n"
+          "Server: %s\r\n"
           "Connection: close\r\n"
           "Content-Encoding: identity\r\n"
           "Content-Type: %s\r\n"
           "Content-Length: %zi\r\n\r\n",
-          mimeGuess(filePath), fileSize); 
+          CHTTPD_SERVER_NAME, mimeGuess(filePath), fileSize);
   if (errno != 0) {
     LOG_WARN("failed to write response header: %d", errno);
     return;
@@ -118,11 +120,9 @@ static void handleStatic(const char *filePath,
 
 static void handleCGI(const char *cgiPath,
                       const HttpRequest *request,
+                      const char *clientAddr,
                       FILE *fp,
                       Error *error) {
-  (void)cgiPath;
-  (void)request;
-  (void)fp;
   QUICK_ERROR(error, 500, "CGI not implemented yet");
 }
 

@@ -7,6 +7,7 @@
 
 void routeAndHandle(const Config *config,
                     const HttpRequest *request,
+                    const char *clientAddr,
                     FILE *fp,
                     Error *error);
 

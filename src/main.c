@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include "cfglang.h"
+#include "chttpd_cfg.h"
 #include "file_util.h"
 #include "http.h"
 #include "route.h"
@@ -23,6 +24,7 @@ typedef struct st_http_input_context {
   size_t workerId;
   const Config *config;
   int fdConnection;
+  char *clientAddr;
 } HttpInputContext;
 
 static int httpMainLoop(const Config *config);
@@ -124,7 +126,6 @@ static int httpMainLoop(const Config *config) {
   }
 
   size_t workerId = 0;
-
   listen(fdSock, config->maxPending);
 
   struct sockaddr_in clientAddr;
@@ -150,6 +151,7 @@ static int httpMainLoop(const Config *config) {
     inputContext->workerId = workerId++;
     inputContext->config = config;
     inputContext->fdConnection = fdConnection;
+    inputContext->clientAddr = copyString(addrStr);
 
     pthread_t thread;
     int res = pthread_create(&thread, NULL, httpHandler, inputContext);
@@ -225,8 +227,9 @@ static void* httpHandler(void *context) {
 
   LOG_INFO("accepting HTTP request: %s %s",
            HTTP_METHOD_NAMES[request->method],
-           ((StringPair*)ccVecNth(&request->params, 0))->second);
-  for (size_t i = 1; i < ccVecLen(&request->params); i++) {
+           request->requestPath);
+  LOG_INFO(" - ?%s", request->queryString);
+  for (size_t i = 0; i < ccVecLen(&request->params); i++) {
     StringPair *param = (StringPair*)ccVecNth(&request->params, i);
     LOG_DBG(" ?%s=%s", param->first, param->second);
   }
@@ -241,7 +244,7 @@ static void* httpHandler(void *context) {
 
   Error *error = errorBuffer(SMALL_BUFFER_SIZE);
 
-  routeAndHandle(config, request, fp, error);
+  routeAndHandle(config, request, inputContext->clientAddr, fp, error);
   dropHttpRequest(request);
 
   if (!isError(error)) {
@@ -249,10 +252,12 @@ static void* httpHandler(void *context) {
     fputs(ERROR_PAGE_404_HEAD, fp);
     fprintf(fp, "Content-Length: %zu\r\n",
             strlen(ERROR_PAGE_404_CONTENT));
+    fprintf(fp, "Server: %s\r\n", CHTTPD_SERVER_NAME);
     fputs(GENERAL_HEADERS, fp);
     fputs(ERROR_PAGE_404_CONTENT, fp);
   } else {
     fputs(ERROR_PAGE_500_HEAD, fp);
+    fprintf(fp, "Server: %s\r\n", CHTTPD_SERVER_NAME);
     fputs(GENERAL_HEADERS, fp);
     fputs(ERROR_PAGE_500_CONTENT_PART1, fp);
     fprintf(fp, "%s:%d: %s",
@@ -265,6 +270,7 @@ static void* httpHandler(void *context) {
 close_fp_ret:
   fflush(fp);
   fclose(fp);
+  free(inputContext->clientAddr);
   free(inputContext);
   return NULL;
 }

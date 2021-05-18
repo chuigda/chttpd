@@ -35,18 +35,25 @@ void dropHttpRequest(HttpRequest *request) {
     dropStringPair(*param);
   }
   ccVecDestroy(&request->params);
+
+  free(request->requestPath);
+  free(request->queryString);
   free(request);
 }
 
 static char *readHttpLine(FILE *fp);
 static _Bool parseHttpFirstLine(const char *line,
                                 HttpMethod *method,
+                                char **requestPath,
+                                char **queryString,
                                 ccVec TP(StringPair) *params);
 static _Bool parseHttpHeaderLine(const char *line,
                                  ccVec TP(StringPair) *headers);
 static const char *skipWhitespace(const char *start);
 static _Bool parseQueryPath(const char *start,
                             const char *end,
+                            char **requestPath,
+                            char **queryString,
                             ccVec TP(StringPair) *params);
 
 HttpRequest *readHttpRequest(FILE *fp) {
@@ -58,8 +65,16 @@ HttpRequest *readHttpRequest(FILE *fp) {
   HttpMethod method;
   ccVec TP(StringPair) params;
   ccVecInit(&params, sizeof(StringPair));
+  char *requestPath = NULL;
+  char *queryString = NULL;
 
-  if (!parseHttpFirstLine(line, &method, &params)) {
+  if (!parseHttpFirstLine(
+        line,
+        &method,
+        &requestPath,
+        &queryString,
+        &params
+     )) {
     goto free_params_ret;
   }
   free(line);
@@ -116,6 +131,8 @@ HttpRequest *readHttpRequest(FILE *fp) {
 
   ret->method = method;
   ret->contentLength = contentLength;
+  ret->requestPath = requestPath;
+  ret->queryString = queryString;
   ret->params = params;
   ret->headers = headers;
   return ret;
@@ -133,6 +150,8 @@ free_headers_ret:
   /* fallthrough */
 
 free_params_ret:
+  free(requestPath);
+  free(queryString);
   for (size_t i = 0; i < ccVecLen(&params); i++) {
     StringPair *param = (StringPair*)ccVecNth(&params, i);
     dropStringPair(*param);
@@ -168,6 +187,8 @@ static char *readHttpLine(FILE *fp) {
 
 static _Bool parseHttpFirstLine(const char *line,
                                 HttpMethod *method,
+                                char **requestPath,
+                                char **queryString,
                                 ccVec TP(StringPair) *params) {
   const char *it = strchr(line, ' ');
   if (it == NULL) {
@@ -196,7 +217,7 @@ static _Bool parseHttpFirstLine(const char *line,
   it = it2;
   it2 = strchr(it2, ' ');
 
-  if (!parseQueryPath(it, it2, params)) {
+  if (!parseQueryPath(it, it2, requestPath, queryString, params)) {
     LOG_ERR("error parsing http request: \"%s\": invalid query path",
             line);
     return 0;
@@ -249,6 +270,8 @@ static const char *skipWhitespace(const char *str) {
 
 static _Bool parseQueryPath(const char *it1,
                             const char *it2,
+                            char **requestPath,
+                            char **queryString,
                             ccVec TP(StringPair) *params) {
   const char *it3 = it1;
   while (it3 != it2 && *it3 != '?') {
@@ -256,18 +279,21 @@ static _Bool parseQueryPath(const char *it1,
   }
   
   size_t pathSize = it3 - it1;
-  char *path = (char*)malloc(pathSize + 1);
-  strncpy(path, it1, pathSize);
-  path[pathSize] = '\0';
-
-  StringPair pair = (StringPair) { copyString("!!reserved0"), path };
-  ccVecPushBack(params, &pair);
+  *requestPath = (char*)malloc(pathSize + 1);
+  strncpy(*requestPath, it1, pathSize);
+  (*requestPath)[pathSize] = '\0';
 
   if (*it3 != '?') {
     return 1;
   }
 
   it3++;
+
+  size_t queryStringSize = it2 - it3;
+  *queryString = (char*)malloc(queryStringSize + 1);
+  strncpy(*queryString, it3, queryStringSize);
+  (*queryString)[queryStringSize] = '\0';
+
   for (;;) {
     it1 = it3;
     while (it3 != it2 && *it3 != '=') {

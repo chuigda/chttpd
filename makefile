@@ -26,6 +26,7 @@ all_deps: \
 # All headers
 HEADERS = include/agno3.h \
 	include/cfglang.h \
+	include/chttpd_cfg.h \
   include/file_util.h \
 	include/error.h \
 	include/html.h \

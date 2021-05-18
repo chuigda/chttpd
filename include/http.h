@@ -18,6 +18,8 @@ typedef enum e_http_error {
 typedef struct st_http_request {
   HttpMethod method;
   size_t contentLength;
+  char *requestPath;
+  char *queryString;
   ccVec TP(StringPair) params;
   ccVec TP(StringPair) headers;
   char body[0];
