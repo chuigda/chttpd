@@ -1,5 +1,6 @@
 #include "route.h"
 
+#include <ctype.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
@@ -10,6 +11,12 @@
 #include "util.h"
 
 static const char *mimeGuess(const char *filePath);
+static ccVec TP(char*) requestToEnv(const Config *config,
+                                    const HttpRequest *request,
+                                    const char *clientAddr,
+                                    const char *scriptName);
+static char *buildEnvItem(const char *key, const char *value);
+
 static void handleStatic(const char *filePath,
                          FILE *fp,
                          Error *error);
@@ -124,5 +131,36 @@ static void handleCGI(const char *cgiPath,
                       FILE *fp,
                       Error *error) {
   QUICK_ERROR(error, 500, "CGI not implemented yet");
+}
+
+static ccVec TP(char*) requestToEnv(const Config *config,
+                                    const HttpRequest *request,
+                                    const char *clientAddr,
+                                    const char *scriptName) {
+  char *requestMethod = buildEnvItem("REQUEST_METHOD",
+                                     HTTP_METHOD_NAMES[request->method]);
+  char *queryString = buildEnvItem("QUERY_STRING", request->queryString);
+  char *serverName = buildEnvItem("SERVER_NAME", config->address);
+  char *serverSoft = buildEnvItem("SERVER_SOFTWARE", CHTTPD_SERVER_NAME);
+  char *scName = buildEnvItem("SCRIPT_NAME", scriptName);
+
+  /* TODO not implemented */
+}
+
+static char *buildEnvItem(const char *key, const char *value) {
+  char *ret = (char*)malloc(strlen(key) + strlen(value) + 1);
+  char *iter = ret;
+  while (*key != '\0') {
+    if (*key == '-') {
+      *iter = '_';
+    } else {
+      *iter = toupper(*key);
+    }
+    iter++;
+    key++;
+  }
+  *iter++ = '=';
+  strcpy(iter, value);
+  return ret;
 }
 
