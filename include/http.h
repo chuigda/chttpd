@@ -1,5 +1,5 @@
-#ifndef HTTP_H
-#define HTTP_H
+#ifndef CHTTPD_HTTP_H
+#define CHTTPD_HTTP_H
 
 #include <stdio.h>
 
@@ -43,4 +43,4 @@ HttpResponse *createHttpResponse(HttpCode code,
 int writeHttpResponse(FILE *fp, HttpResponse *response);
 void dropHttpResponse(HttpResponse *response);
 
-#endif /* HTTP_H */
+#endif /* CHTTPD_HTTP_H */

@@ -1,5 +1,5 @@
-#ifndef HTTP_BASE_H
-#define HTTP_BASE_H
+#ifndef CHTTPD_HTTP_BASE_H
+#define CHTTPD_HTTP_BASE_H
 
 typedef enum e_http_method {
   HTTP_GET  = 0,

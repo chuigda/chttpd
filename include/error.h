@@ -1,5 +1,5 @@
-#ifndef ERROR_H
-#define ERROR_H
+#ifndef CHTTPD_ERROR_H
+#define CHTTPD_ERROR_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -40,4 +40,4 @@ void formatError(Error *error,
                 __VA_ARGS__ \
                ); }
 
-#endif /* ERROR_H */
+#endif /* CHTTPD_ERROR_H */

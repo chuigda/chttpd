@@ -5,8 +5,8 @@
  * AgNO3 + NaCl = AgCl↓ + NaNO3
  */
 
-#ifndef AGNO3_H
-#define AGNO3_H
+#ifndef CHTTPD_AGNO3_H
+#define CHTTPD_AGNO3_H
 
 #include "cc_vec.h"
 #include "http.h"
@@ -28,4 +28,4 @@ void drainFlask(Flask flask);
 
 const pl2b_Language *getAgNO3(void);
 
-#endif /* AGNO3_H */
+#endif /* CHTTPD_AGNO3_H */

@@ -10,11 +10,12 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "cfglang.h"
-#include "chttpd_cfg.h"
+#include "cgi.h"
+#include "config.h"
+#include "dcgi.h"
 #include "file_util.h"
+#include "static.h"
 #include "http.h"
-#include "route.h"
 #include "util.h"
 
 #define LARGE_BUFFER_SIZE 65536
@@ -29,7 +30,11 @@ typedef struct st_http_input_context {
 
 static int httpMainLoop(const Config *config);
 static void *httpHandler(void* context);
-static void handleCGI(const char *cgiPath);
+static void routeAndHandle(const Config *config,
+                           HttpRequest *request,
+                           const char *clientAddr,
+                           FILE *fp,
+                           Error *error);
 
 int main(int argc, const char *argv[]) {
   if (argc != 2) {
@@ -267,6 +272,8 @@ static void* httpHandler(void *context) {
     fputs(ERROR_PAGE_500_CONTENT_PART2, fp);
   }
 
+  dropError(error);
+
 close_fp_ret:
   fflush(fp);
   fclose(fp);
@@ -274,4 +281,36 @@ close_fp_ret:
   free(inputContext);
   return NULL;
 }
+
+static void routeAndHandle(const Config *config,
+                           HttpRequest *request,
+                           const char *clientAddr,
+                           FILE *fp,
+                           Error *error) {
+  for (size_t i = 0; i < ccVecLen(&config->routes); i++) {
+    const Route *route = (Route*)ccVecNth(&config->routes, i);
+    if (!strcmp(request->requestPath, route->path)
+        && request->method == route->httpMethod) {
+      switch (route->handlerType) {
+      case HDLR_SCRIPT:
+        QUICK_ERROR(error, 500, "SCRIPT not supported yet");
+        break;
+      case HDLR_STATIC:
+        handleStatic(route->handlerPath, fp, error);
+        break;
+      case HDLR_CGI:
+        handleCGI(config, route->handlerPath, request, clientAddr, fp,
+                  error);
+        break;
+      case HDLR_DCGI:
+        handleDCGI(route->handlerPath, request, fp, error);
+        break;
+      }
+      return;
+    }
+  }
+
+  QUICK_ERROR(error, 404, "");
+}
+
 

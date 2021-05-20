@@ -25,7 +25,7 @@
  *   authors of this software dedicate part of copyright interest in the
  *   software to the public domain. We make this dedication for the 
  *   benefit of the public at large and to the detriment of our heirs
- *   and sccessors.
+ *   and successors.
  *
  *   THIS SOFTWARE IS PROVIDED "AS IS", WITH OUT WARRANTY OF ANY KIND,
  *   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
@@ -45,10 +45,6 @@
 #include <stdint.h>
 
 #include "error.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*** ------------------------ pl2b_CmpResult ----------------------- ***/
 
@@ -159,9 +155,5 @@ void pl2b_runWithLanguage(pl2b_Program *program,
                           const pl2b_Language *language,
                           void *userContext,
                           Error *error);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
 
 #endif /* PLAPI_PL2B_H */

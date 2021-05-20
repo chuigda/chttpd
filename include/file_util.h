@@ -1,9 +1,9 @@
-#ifndef FILE_UTIL_H
-#define FILE_UTIL_H
+#ifndef CHTTPD_FILE_UTIL_H
+#define CHTTPD_FILE_UTIL_H
 
 #include <stdio.h>
 #include <unistd.h>
 
 ssize_t readAll(FILE *fp, char *buffer, size_t bufSize);
 
-#endif /* FILE_UTIL_H */
+#endif /* CHTTPD_FILE_UTIL_H */

@@ -1,7 +1,7 @@
-#ifndef ROUTE_H
-#define ROUTE_H
+#ifndef CHTTPD_ROUTE_H
+#define CHTTPD_ROUTE_H
 
-#include "cfglang.h"
+#include "config.h"
 #include "error.h"
 #include "http.h"
 
@@ -11,4 +11,4 @@ void routeAndHandle(const Config *config,
                     FILE *fp,
                     Error *error);
 
-#endif /* ROUTE_H */
+#endif /* CHTTPD_ROUTE_H */

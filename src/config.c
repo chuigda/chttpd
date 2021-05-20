@@ -1,4 +1,4 @@
-#include "cfglang.h"
+#include "config.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -12,8 +12,9 @@
 
 const char *HANDLER_TYPE_NAMES[] = {
   [HDLR_SCRIPT] = "SCRIPT",
-  [HDLR_CGI] = "CGI",
-  [HDLR_STATIC] = "STATIC"
+  [HDLR_CGI]    = "CGI",
+  [HDLR_STATIC] = "STATIC",
+  [HDLR_DCGI]   = "DCGI"
 };
 
 void initConfig(Config *config) {
@@ -180,18 +181,14 @@ static pl2b_Cmd* addRoute(pl2b_Program *program,
 
   HandlerType handlerType;
   const char *handlerTypeStr = command->args[1].str;
-  if (!strcmp(handlerTypeStr, "SCRIPT")
-      || !strcmp(handlerTypeStr, "script")
-      || !strcmp(handlerTypeStr, "Script")) {
+  if (stricmp(handlerTypeStr, HANDLER_TYPE_NAMES[HDLR_SCRIPT])) {
     handlerType = HDLR_SCRIPT;
-  } else if (!strcmp(handlerTypeStr, "CGI")
-             || !strcmp(handlerTypeStr, "cgi")
-             || !strcmp(handlerTypeStr, "Cgi")) {
+  } else if (stricmp(handlerTypeStr, HANDLER_TYPE_NAMES[HDLR_CGI])) {
     handlerType = HDLR_CGI;
-  } else if (!strcmp(handlerTypeStr, "STATIC")
-             || !strcmp(handlerTypeStr, "static")
-             || !strcmp(handlerTypeStr, "Static")) {
+  } else if (stricmp(handlerTypeStr, HANDLER_TYPE_NAMES[HDLR_STATIC])) {
     handlerType = HDLR_STATIC;
+  } else if (stricmp(handlerTypeStr, HANDLER_TYPE_NAMES[HDLR_DCGI])) {
+    handlerType = HDLR_DCGI;
   } else {
     formatError(error, command->sourceInfo, -1,
                 "%s: incorrect handler type: %s",

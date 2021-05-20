@@ -17,23 +17,23 @@ all_deps: \
 	cclib \
 	util \
 	pl2 \
-	cfglang \
+	config \
 	html \
 	agno3 \
-	http \
-	route
+	http
 
 # All headers
 HEADERS = include/agno3.h \
-	include/cfglang.h \
-	include/chttpd_cfg.h \
-  include/file_util.h \
+	include/cgi.h \
+	include/config.h \
+	include/dcgi.h \
+	include/file_util.h \
 	include/error.h \
 	include/html.h \
 	include/http.h \
 	include/http_base.h \
 	include/pl2b.h \
-	include/route.h \
+	include/static.h \
 	include_ext/cc_defs.h \
 	include_ext/cc_list.h \
 	include_ext/cc_vec.h
@@ -54,27 +54,14 @@ chttpd: all_deps src/main.c
 		${HTTP_OBJECTS} \
 		${AGNO3_OBJECTS} \
 		${HTML_OBJECTS} \
-		${CFG_LANG_OBJECTS} \
+		${CONFIG_OBJECTS} \
 		${PL2_OBJECTS} \
 		${UTIL_OBJECTS} \
 		${CCLIB_OBJECTS} \
-		${ROUTE_OBJECTS} \
-		-o chttpd -lpthread
-
-# Build Route objects
-ROUTE_OBJECTS := out/route.o
-
-route: route_prompt ${ROUTE_OBJECTS}
-
-route_prompt:
-	@echo Building request router
-
-out/route.o: src/route.c ${HEADERS}
-	@$(LOG) CC src/route.c
-	@$(CC) src/route.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/route.o
+		-o chttpd -lpthread -ldl
 
 # Build HTTP objects
-HTTP_OBJECTS := out/http.o
+HTTP_OBJECTS := out/http.o out/cgi.o out/dcgi.o out/static.o
 
 .PHONY: http http_prompt
 http: http_prompt ${HTTP_OBJECTS}
@@ -85,6 +72,19 @@ http_prompt:
 out/http.o: src/http.c ${HEADERS}
 	@$(LOG) CC src/http.c
 	@$(CC) src/http.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/http.o
+
+out/cgi.o: src/cgi.c ${HEADERS}
+	@$(LOG) CC src/cgi.c
+	@$(CC) src/cgi.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/cgi.o
+
+out/dcgi.o: src/dcgi.c ${HEADERS}
+	@$(LOG) CC src/dcgi.c
+	@$(CC) src/dcgi.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/dcgi.o
+
+out/static.o: src/static.c ${HEADERS}
+	@$(LOG) CC src/static.c
+	@$(CC) src/static.c $(INCLUDES) $(WARNINGS) $(CFLAGS) \
+		-c -o out/static.o
 
 # Build AgNO3 lang objects
 AGNO3_OBJECTS := out/agno3.o
@@ -115,19 +115,19 @@ out/html.o: src/html.c ${HEADERS}
 	@$(CC) src/html.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/html.o
 
 # Build CFG lang objects
-CFG_LANG_OBJECTS := out/cfglang.o
+CONFIG_OBJECTS := out/config.o
 
 .PHONY: cfglang cfglang_prompt
-cfglang: cfglang_prompt ${CFG_LANG_OBJECTS}
+config: cfglang_prompt ${CONFIG_OBJECTS}
 
-cfglang_prompt:
+config_prompt:
 	@echo Building chttpd configuration language
 
-out/cfglang.o: src/cfglang.c ${HEADERS}
-	@$(LOG) CC src/cfglang.c
-	@$(CC) src/cfglang.c \
+out/config.o: src/config.c ${HEADERS}
+	@$(LOG) CC src/config.c
+	@$(CC) src/config.c \
 		$(INCLUDES) $(WARNINGS) $(CFLAGS) \
-		-c -o out/cfglang.o
+		-c -o out/config.o
 
 # Build PL2 objects
 PL2_OBJECTS := out/pl2b.o

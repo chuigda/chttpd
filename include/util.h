@@ -1,5 +1,5 @@
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef CHTTPD_UTIL_H
+#define CHTTPD_UTIL_H
 
 #include <stdlib.h>
 
@@ -45,4 +45,4 @@ void chttpdLog(LogLevel logLevel,
 #define LOG_ERR(FMT, ...) { LOG(LL_ERROR, FMT, ##__VA_ARGS__); }
 #define LOG_FATAL(FMT, ...) { LOG(LL_FATAL, FMT, ##__VA_ARGS__); }
 
-#endif /* UTIL_H */
+#endif /* CHTTPD_UTIL_H */

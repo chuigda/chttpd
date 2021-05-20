@@ -2,8 +2,8 @@
  * html.h: defines a representation for HTML document
  */
 
-#ifndef HTML_H
-#define HTML_H
+#ifndef CHTTPD_HTML_H
+#define CHTTPD_HTML_H
 
 #include "cc_vec.h"
 #include "util.h"
@@ -62,4 +62,4 @@ void deleteHtml(HtmlDoc *doc);
 
 int printHtml(FILE *fp, HtmlDoc *doc);
 
-#endif /* HTML_H */
+#endif /* CHTTPD_HTML_H */

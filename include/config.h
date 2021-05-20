@@ -1,6 +1,4 @@
 /**
- * cfg_lang.h: minimal configuration language for http server
- *
  * Basic grammar of configuration language:
  *   configuration ::= lines
  *   lines ::= lines line | NIL
@@ -10,24 +8,30 @@
  *   handler-type ::= "script" | "cgi" | "static"
  *   config-line ::= "listen-address" ADDRESS
  *                 | "listen-port" PORT
+ *                 | "max-pending" MAX-PENDING
+ *                 | ""
  */
 
-#ifndef CFG_LANG_H
-#define CFG_LANG_H
+#ifndef CHTTPD_CONFIG_H
+#define CHTTPD_CONFIG_H
 
 #include "cc_vec.h"
 #include "http_base.h"
 #include "pl2b.h"
 #include "util.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define CHTTPD_VER_MAJOR 0
+#define CHTTPD_VER_MINOR 1
+#define CHTTPD_VER_PATCH 0
+
+#define CHTTPD_NAME        "chttpd"
+#define CHTTPD_SERVER_NAME "chttpd/0.1"
 
 typedef enum e_handler_type {
   HDLR_SCRIPT = 0,
   HDLR_CGI    = 1,
-  HDLR_STATIC = 2
+  HDLR_STATIC = 2,
+  HDLR_DCGI   = 3
 } HandlerType;
 
 extern const char *HANDLER_TYPE_NAMES[];
@@ -53,8 +57,4 @@ void dropConfig(Config *config);
 
 const pl2b_Language *getCfgLanguage(void);
 
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-#endif /* CFG_LANG_H */
+#endif /* CHTTPD_CONFIG_H */

@@ -100,4 +100,10 @@ void chttpdLog(LogLevel logLevel,
             line,
             buffer);
   }
+  
+  if (workerId != -1) {
+    free(buffer);
+    buffer = NULL;
+    bufferSize = 0;
+  }
 }
