@@ -83,6 +83,7 @@ int main(int argc, const char *argv[]) {
 
   LOG_INFO("chttpd listening to: %s:%d", config.address, config.port);
   LOG_INFO(" - max pending count to %d", config.maxPending);
+  LOG_INFO(" - CGI timeout set to %d", config.cgiTimeout);
   for (size_t i = 0; i < ccVecLen(&config.routes); i++) {
     Route *route = (Route*)ccVecNth(&config.routes, i);
     LOG_INFO(" - route \"%s %s\" to \"%s %s\"",
