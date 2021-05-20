@@ -2,6 +2,8 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -20,7 +22,8 @@ static char *buildEnvItem(const char *key, const char *value);
 static void handleStatic(const char *filePath,
                          FILE *fp,
                          Error *error);
-static void handleCGI(const char *cgiProgram,
+static void handleCGI(const Config *config,
+                      const char *cgiProgram,
                       const HttpRequest *request,
                       const char *clientAddr,
                       FILE *fp,
@@ -43,7 +46,8 @@ void routeAndHandle(const Config *config,
         handleStatic(route->handlerPath, fp, error);
         break;
       case HDLR_CGI:
-        handleCGI(route->handlerPath, request, clientAddr, fp, error);
+        handleCGI(config, route->handlerPath, request, clientAddr, fp,
+                  error);
         break;
       }
       return;
@@ -127,12 +131,56 @@ static void handleStatic(const char *filePath,
   }
 }
 
-static void handleCGI(const char *cgiPath,
+static void handleCGI(const Config *config,
+                      const char *cgiPath,
                       const HttpRequest *request,
                       const char *clientAddr,
                       FILE *fp,
                       Error *error) {
-  QUICK_ERROR(error, 500, "CGI not implemented yet");
+  ccVec TP(char*) env = requestToEnv(config,
+                                     request,
+                                     clientAddr,
+                                     cgiPath);
+  int childStdin[2];
+  int childStdout[2];
+
+  if (pipe(childStdin) < 0) {
+    QUICK_ERROR2(error, 500, "cannot create pipe for child stdin: %d",
+                 errno);
+    return;
+  }
+
+  if (pipe(childStdout) < 0) {
+    QUICK_ERROR2(error, 500, "cannot create pipe for child stdout: %d",
+                 errno);
+    return;
+  }
+
+  pid_t pid = fork();
+  if (pid < 0) {
+    QUICK_ERROR2(error, 500, "cannot create CGI process: %d", errno);
+    return;
+  }
+
+  if (pid == 0) {
+    close(childStdin[1]);
+    close(childStdout[0]);
+    dup2(childStdin[0], STDIN_FILENO);
+    dup2(childStdout[1], STDOUT_FILENO);
+    alarm(config->cgiTimeout);
+    char *const argv[] = { copyString(cgiPath), NULL };
+    execvpe(cgiPath, argv, (char**)ccVecData(&env));
+  } else {
+    close(childStdin[0]);
+    close(childStdout[1]);
+    
+    if (request->contentLength != 0) {
+      write(childStdin[0], request->body, request->contentLength);
+    }
+
+    FILE *childOutput = fdopen(childStdout[0], "r");
+    /* TODO parse output */
+  }
 }
 
 static ccVec TP(char*) requestToEnv(const Config *config,
@@ -145,8 +193,27 @@ static ccVec TP(char*) requestToEnv(const Config *config,
   char *serverName = buildEnvItem("SERVER_NAME", config->address);
   char *serverSoft = buildEnvItem("SERVER_SOFTWARE", CHTTPD_SERVER_NAME);
   char *scName = buildEnvItem("SCRIPT_NAME", scriptName);
+  char *gatewayInterface = buildEnvItem("GATEWAY_INTERFACE", "CGI/1.1");
+  char *remoteAddr = buildEnvItem("REMOTE_ADDR", clientAddr);
+  /* TODO setup server port */
 
-  /* TODO not implemented */
+  ccVec TP(char*) ret;
+  ccVecInit(&ret, sizeof(char*));
+  ccVecPushBack(&ret, &requestMethod);
+  ccVecPushBack(&ret, &queryString);
+  ccVecPushBack(&ret, &serverName);
+  ccVecPushBack(&ret, &serverSoft);
+  ccVecPushBack(&ret, &scName);
+  ccVecPushBack(&ret, &gatewayInterface);
+  ccVecPushBack(&ret, &remoteAddr);
+
+  for (size_t i = 0; i < ccVecLen(&request->headers); i++) {
+    StringPair *header = (StringPair*)ccVecNth(&request->headers, i);
+    char *envItem = buildEnvItem(header->first, header->second);
+    ccVecPushBack(&ret, &envItem);
+  }
+
+  return ret;
 }
 
 static char *buildEnvItem(const char *key, const char *value) {

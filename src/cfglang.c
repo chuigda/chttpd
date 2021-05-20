@@ -5,6 +5,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define DEFAULT_ADDRESS     "127.0.0.1"
+#define DEFAULT_PORT        8080
+#define DEFAULT_MAX_PENDING 16
+#define DEFAULT_CGI_TIMEOUT 5
+
 const char *HANDLER_TYPE_NAMES[] = {
   [HDLR_SCRIPT] = "SCRIPT",
   [HDLR_CGI] = "CGI",
@@ -12,9 +17,10 @@ const char *HANDLER_TYPE_NAMES[] = {
 };
 
 void initConfig(Config *config) {
-  config->address = "127.0.0.1";
-  config->port = 8080;
-  config->maxPending = 16;
+  config->address = DEFAULT_ADDRESS;
+  config->port = DEFAULT_PORT;
+  config->maxPending = DEFAULT_MAX_PENDING;
+  config->cgiTimeout = DEFAULT_CGI_TIMEOUT;
   ccVecInit(&config->routes, sizeof(Route));
 }
 
@@ -27,6 +33,11 @@ static pl2b_Cmd* configAddr(pl2b_Program *program,
                             pl2b_Cmd *command,
                             Error *error);
 
+static pl2b_Cmd *configIntAttr(pl2b_Program *program,
+                               int *dest,
+                               pl2b_Cmd *command,
+                               Error *error);
+
 static pl2b_Cmd* configPort(pl2b_Program *program,
                             void *context,
                             pl2b_Cmd *command,
@@ -37,6 +48,11 @@ static pl2b_Cmd *configPend(pl2b_Program *program,
                             pl2b_Cmd *command,
                             Error *error);
 
+static pl2b_Cmd *configCGITimeout(pl2b_Program *program,
+                                  void *context,
+                                  pl2b_Cmd *command,
+                                  Error *error);
+
 static pl2b_Cmd* addRoute(pl2b_Program *program,
                           void *context,
                           pl2b_Cmd *command,
@@ -44,15 +60,16 @@ static pl2b_Cmd* addRoute(pl2b_Program *program,
 
 const pl2b_Language *getCfgLanguage(void) {
   static pl2b_PCallCmd pCallCmds[] = {
-    { "listen-address", NULL, configAddr, 0, 0 },
-    { "listen-port",    NULL, configPort, 0, 0 },
-    { "max-pending",    NULL, configPend, 0, 0 },
-    { "post",           NULL, addRoute,   0, 0 },
-    { "POST",           NULL, addRoute,   0, 0 },
-    { "Post",           NULL, addRoute,   0, 0 },
-    { "get",            NULL, addRoute,   0, 0 },
-    { "Get",            NULL, addRoute,   0, 0 },
-    { "GET",            NULL, addRoute,   0, 0 },
+    { "listen-address", NULL, configAddr,       0, 0 },
+    { "listen-port",    NULL, configPort,       0, 0 },
+    { "max-pending",    NULL, configPend,       0, 0 },
+    { "cgi-timeout",    NULL, configCGITimeout, 0, 0 },
+    { "post",           NULL, addRoute,         0, 0 },
+    { "POST",           NULL, addRoute,         0, 0 },
+    { "Post",           NULL, addRoute,         0, 0 },
+    { "get",            NULL, addRoute,         0, 0 },
+    { "Get",            NULL, addRoute,         0, 0 },
+    { "GET",            NULL, addRoute,         0, 0 },
     { NULL, NULL, NULL, 0, 0 }
   };
 
@@ -84,54 +101,52 @@ static pl2b_Cmd* configAddr(pl2b_Program *program,
   return command->next;
 }
 
-static pl2b_Cmd *configPort(pl2b_Program *program,
-                            void *context,
-                            pl2b_Cmd *command,
-                            Error *error) {
+static pl2b_Cmd *configIntAttr(pl2b_Program *program,
+                               int *dest,
+                               pl2b_Cmd *command,
+                               Error *error) {
   (void)program;
 
-  Config *config = (Config*)context;
   if (pl2b_argsLen(command) != 1) {
     formatError(error, command->sourceInfo, -1,
                 "listen-port: expects exactly one argument");
     return NULL;
   }
 
-  int port = atoi(command->args[0].str);
-  if (port <= 0 || port >= 65536) {
+  int value = atoi(command->args[0].str);
+  if (value <= 0 || value >= 65536) {
     formatError(error, command->sourceInfo, -1,
-                "listen-port: invalid port: %s",
-                command->args[0].str);
+                "%s: invalid port: %s",
+                command->cmd, command->args[0].str);
     return NULL;
   }
 
-  config->port = port;
+  *dest = value;
   return command->next;
+}
+
+static pl2b_Cmd *configPort(pl2b_Program *program,
+                            void *context,
+                            pl2b_Cmd *command,
+                            Error *error) {
+  Config *config = (Config*)context;
+  return configIntAttr(program, &config->port, command, error);
 }
 
 static pl2b_Cmd *configPend(pl2b_Program *program,
                             void *context,
                             pl2b_Cmd *command,
                             Error *error) {
-  (void)program;
-
   Config *config = (Config*)context;
-  if (pl2b_argsLen(command) != 1) {
-    formatError(error, command->sourceInfo, -1,
-                "max-pending: expects exactly one argument");
-    return NULL;
-  }
-  
-  int maxPending = atoi(command->args[0].str);
-  if (maxPending <= 0) {
-    formatError(error, command->sourceInfo, -1,
-                "max-pending: invalid pending count: %s",
-                command->args[0].str);
-    return NULL;
-  }
+  return configIntAttr(program, &config->maxPending, command, error);
+}
 
-  config->maxPending = maxPending;
-  return command->next;
+static pl2b_Cmd *configCGITimeout(pl2b_Program *program,
+                                  void *context,
+                                  pl2b_Cmd *command,
+                                  Error *error) {
+  Config *config = (Config*)context;
+  return configIntAttr(program, &config->cgiTimeout, command, error);
 }
 
 static pl2b_Cmd* addRoute(pl2b_Program *program,

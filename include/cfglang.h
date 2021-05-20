@@ -43,6 +43,7 @@ typedef struct st_config {
   const char *address;
   int port;
   int maxPending;
+  int cgiTimeout;
 
   ccVec TP(Route) routes;
 } Config;
