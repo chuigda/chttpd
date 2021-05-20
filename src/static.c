@@ -22,14 +22,14 @@ void handleStatic(const char *filePath,
   if (fileSize < 0) {
     QUICK_ERROR2(error, 500, "handleStatic: cannot get size of file: %s",
                  filePath);
-    return;
+    goto close_fp_ret;
   }
 
   char *buffer = (char*)malloc(fileSize);
   if (buffer == NULL) {
     QUICK_ERROR2(error, 500, "handleStatic: cannot allocate %zi bytes",
                  fileSize);
-    return;
+    goto close_fp_ret;
   }
 
   ssize_t bytesRead = readAll(fpFile, buffer, fileSize);
@@ -37,7 +37,7 @@ void handleStatic(const char *filePath,
     QUICK_ERROR2(error, 500,
                  "handleStatic: cannot read %zi bytes from %s",
                  fileSize, filePath);
-    return;
+    goto free_buf_ret;
   }
 
   fprintf(fp,
@@ -50,14 +50,19 @@ void handleStatic(const char *filePath,
           CHTTPD_SERVER_NAME, mimeGuess(filePath), fileSize);
   if (errno != 0) {
     LOG_WARN("failed to write response header: %d", errno);
-    return;
+    goto free_buf_ret;
   }
 
   ssize_t bytesWrite = fwrite(buffer, 1, fileSize, fp);
   if (bytesWrite != fileSize) {
     LOG_WARN("failed to respond %zi bytes: %d", fileSize, errno);
-    return;
   }
+
+free_buf_ret:
+  free(buffer);
+
+close_fp_ret:
+  fclose(fpFile);
 }
 
 static const char *mimeGuess(const char *filePath) {
