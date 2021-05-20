@@ -265,7 +265,7 @@ static void* httpHandler(void *context) {
     fprintf(fp, "Server: %s\r\n", CHTTPD_SERVER_NAME);
     fputs(GENERAL_HEADERS, fp);
     fputs(ERROR_PAGE_500_CONTENT_PART1, fp);
-    fprintf(fp, "%s:%d: %s",
+    fprintf(fp, "%s:%zi: %s",
             error->sourceInfo.sourceFile,
             error->sourceInfo.line,
             error->errorBuffer);

@@ -82,7 +82,7 @@ void chttpdLog(LogLevel logLevel,
 
   if (workerId != -1) {
     fprintf(stderr,
-            "\033[%sm [ %s %s:%s:%d ] <%d> %s \033[0m\n",
+            "\033[%sm [ %s %s:%s:%d ] <%zi> %s \033[0m\n",
             log_level_controls[logLevel],
             log_level_texts[logLevel],
             fileName,
