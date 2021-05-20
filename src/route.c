@@ -68,6 +68,8 @@ static const char *mimeGuess(const char *filePath) {
     return "application/json";
   } else if (stricmp(postfix, ".xml")) {
     return "application/xml";
+  } else if (stricmp(postfix, ".txt")) {
+    return "text/plain";
   }
   
   return "application/octet-stream";
