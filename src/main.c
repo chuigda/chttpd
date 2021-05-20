@@ -220,7 +220,6 @@ static void* httpHandler(void *context) {
   const Config *config = inputContext->config;
   int fd = inputContext->fdConnection;
 
-  (void)config;
   FILE *fp = fdopen(fd, "a+");
   if (fp == NULL) {
     LOG_ERR("error calling fdopen: %d", errno);

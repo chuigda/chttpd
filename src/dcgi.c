@@ -54,6 +54,7 @@ void handleDCGI(const char *dcgiLib,
 
   fprintf(response,
           "HTTP/1.1 200 Ok\r\n"
+          "Content-Encoding: identity\r\n"
           "Content-Length: %zu\r\n"
           "Connection: close\r\n"
           "Server: %s\r\n",
