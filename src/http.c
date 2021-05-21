@@ -103,7 +103,7 @@ HttpRequest *readHttpRequest(FILE *fp) {
     const StringPair *header = (const StringPair*)ccVecNth(&headers, i);
     if (stricmp(header->first, "Content-Length")) {
       int length = atoi(header->second);
-      if (length == 0) {
+      if (length <= 0) {
         LOG_WARN("invalid Content-Length header value \"%s\" ignored.",
                  header->second);
       } else {
@@ -116,7 +116,7 @@ HttpRequest *readHttpRequest(FILE *fp) {
   HttpRequest *ret = 
     (HttpRequest*)malloc(sizeof(HttpRequest) + contentLength + 1);
   if (ret == NULL) {
-    return NULL;
+    goto free_headers_ret;
   }
 
   if (contentLength != 0) {
@@ -169,9 +169,9 @@ static char *readHttpLine(FILE *fp) {
   if (lineSize == -1) {
     if (errno != 0) {
       LOG_ERR("error: getdelim: %d", errno);
-      free(line);
-      return NULL;
     }
+    free(line);
+    return NULL;
   }
 
   if (lineSize > 2
@@ -235,8 +235,8 @@ static _Bool parseHttpFirstLine(const char *line,
 static _Bool parseHttpHeaderLine(const char *line,
                                  ccVec TP(StringPair) *headers) {
   const char *it = strchr(line, ':');
-  if (*it != ':') {
-    LOG_ERR("error parsing http header: \"%s\": missing colon");
+  if (it == NULL) {
+    LOG_ERR("error parsing http header: \"%s\": missing colon", line);
     return 0;
   }
 
