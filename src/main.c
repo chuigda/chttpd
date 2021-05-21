@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,6 +38,8 @@ static void routeAndHandle(const Config *config,
                            Error *error);
 
 int main(int argc, const char *argv[]) {
+  signal(SIGPIPE, SIG_IGN);
+
   if (argc != 2) {
     LOG_FATAL("expected 1 argument, got %d", argc - 1);
     LOG_INFO("usage: chttpd [config-file]");
