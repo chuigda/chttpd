@@ -61,10 +61,86 @@ explicitly appoint every single file path.
 ## 🔄 Serving dynamic contents
 
 ### 🗡️ By using DCGI
-> Document incomplete by this time
+`DCGI` (Dynamic Common Gateway Interface) is a interface exploiting dynamic library utilities. To
+use `DCGI`, you need to:
+  - Write a C module, define a `dcgi_main` function, write handing mechanism within that function.
+  - Compile the C module as shared object (`libxxx.so`)
+  - Add route to that library
 
-### 🌵 By using CGI
-> Not implemented by this time
+A `dcgi_main` function looks like:
+
+```c
+int dcgi_main(/* input */  const char *queryPath,      /* 1 */
+              /* input */  const StringPair headers[], /* 2 */
+              /* input */  const StringPair params[],  /* 3 */
+              /* input */  const char *body,           /* 4 */
+              /* output */ StringPair **headerDest,    /* 5 */
+              /* output */ char **dataDest,            /* 6 */
+              /* output */ char **errDest) {           /* 7 */
+  /* your handling code */
+  return your_return_code;                /* 8 */
+}
+```
+
+Explainations
+  1. `queryPath`: The path part of HTTP request, not including query parameters. 
+     - example:
+       - `/index.html`
+       - `/robots.txt`
+       - `/api/login`
+  2. `headers`: Array of header pairs. the `first` part of `StringPair` is the header name, and 
+     the `second` part of `StringPair` is the header value. No escape conversions is performed.
+     The whole array ends with a `{ .first = NULL, .second = NULL }` pair.
+     - example:
+       ```
+       {
+         (StringPair) {"Content-Type", "text/plain"},
+         (StringPair) {"Content-Length", "114514"},
+         (StringPair) {"Content-Encoding", "identity"},
+         (StringPair) {"User-Agent", "..."},
+         (StringPair) {NULL, NULL}
+       }
+       ```
+  3. `params`: Similar to `headers`, but stores query parameters.
+     - example:
+       ```
+       {
+         (StringPair) {"blogId", "114514"},
+         (StringPair) {"reply", "1919810"},
+         (StringPair) {NULL, NULL}
+       }
+       ```
+  4. `body`: Null terminated string, presents if `Content-Length` is not zero, `NULL` otherwise.
+  5. `headerDest`: Used for `dcgi_main` to output headers. Keep it untouched if no output header.
+     Use "null-terminated array" structure, and make sure every string is on the heap.
+     - example:
+       ```c
+       /* This should work with UTF-8, but not guaranteed to work with UTF16 or so */
+       static char *copyString(const char *src) {
+         size_t length = strlen(src);
+         char *ret = (char*)malloc(length + 1);
+         strcpy(ret, src);
+         return ret;
+       }
+       
+       typedef char* (StringPair)[2]; /* Use this to avoid including src/util.h in your module*/
+       
+       /* ... */
+       *headerDest = (StringPair*)malloc(sizeof(StringPair) * 2);
+       (*headerDest)[0][0] = copyString("Content-Type");
+       (*headerDest)[0][1] = copyString("text/plain; charset=utf-8");
+       (*headerDest)[1][0] = NULL;
+       (*headerDest)[1][1] = NULL;
+       ```
+  6. `dataDest`: Used for `dcgi_main` to output response body. Keep it untouched if no response
+     body. Use null-terminated string, and make sure it's on the heap.
+     - example:
+       ```c
+       *dataDest = copyString("Excuse you!");
+       ```
+  7. `errDest`: Used for `dcgi_main` to output error information. Keep it untouched if no error.
+  8. Return value: Return `0` or `200` to indicate successful response, any othre value to
+     indicate failed response.
 
 ### 🥈 By using AgNO3
 > Not implemented by this time
