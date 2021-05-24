@@ -11,7 +11,6 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "cgi.h"
 #include "config.h"
 #include "dcgi.h"
 #include "file_util.h"
@@ -33,7 +32,6 @@ static int httpMainLoop(const Config *config);
 static void *httpHandler(void* context);
 static void routeAndHandle(const Config *config,
                            HttpRequest *request,
-                           const char *clientAddr,
                            FILE *fp,
                            Error *error);
 
@@ -85,8 +83,7 @@ int main(int argc, const char *argv[]) {
   }
 
   LOG_INFO("chttpd listening to: %s:%d", config.address, config.port);
-  LOG_INFO(" - max pending count to %d", config.maxPending);
-  LOG_INFO(" - CGI timeout set to %d", config.cgiTimeout);
+  LOG_INFO(" - max pending count set to %d", config.maxPending);
   for (size_t i = 0; i < ccVecLen(&config.routes); i++) {
     Route *route = (Route*)ccVecNth(&config.routes, i);
     LOG_INFO(" - route \"%s %s\" to \"%s %s\"",
@@ -252,7 +249,7 @@ static void* httpHandler(void *context) {
 
   Error *error = errorBuffer(SMALL_BUFFER_SIZE);
 
-  routeAndHandle(config, request, inputContext->clientAddr, fp, error);
+  routeAndHandle(config, request, fp, error);
   dropHttpRequest(request);
 
   if (!isError(error)) {
@@ -287,7 +284,6 @@ close_fp_ret:
 
 static void routeAndHandle(const Config *config,
                            HttpRequest *request,
-                           const char *clientAddr,
                            FILE *fp,
                            Error *error) {
   for (size_t i = 0; i < ccVecLen(&config->routes); i++) {
@@ -300,10 +296,6 @@ static void routeAndHandle(const Config *config,
         break;
       case HDLR_STATIC:
         handleStatic(route->handlerPath, fp, error);
-        break;
-      case HDLR_CGI:
-        handleCGI(config, route->handlerPath, request, clientAddr, fp,
-                  error);
         break;
       case HDLR_DCGI:
         handleDCGI(route->handlerPath, request, fp, error);

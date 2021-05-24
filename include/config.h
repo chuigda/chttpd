@@ -2,14 +2,16 @@
  * Basic grammar of configuration language:
  *   configuration ::= lines
  *   lines ::= lines line | NIL
- *   line ::= router-line | config-line
+ *   line ::= router-line | filter-line | config-line
  *   router-line ::= method PATH handler-type HANDLER
+ *   filter-line ::= "filter" PATH filter-type FILTER maybe-exact
  *   method ::= "get" | "post"
- *   handler-type ::= "script" | "cgi" | "static"
+ *   handler-type ::= "script" | "dcgi" | "static"
+ *   filter-type ::= "script" | "dcgi"
+ *   maybe-exact ::= "exact" | NIL
  *   config-line ::= "listen-address" ADDRESS
  *                 | "listen-port" PORT
  *                 | "max-pending" MAX-PENDING
- *                 | ""
  */
 
 #ifndef CHTTPD_CONFIG_H
@@ -29,9 +31,8 @@
 
 typedef enum e_handler_type {
   HDLR_SCRIPT = 0,
-  HDLR_CGI    = 1,
-  HDLR_STATIC = 2,
-  HDLR_DCGI   = 3
+  HDLR_STATIC = 1,
+  HDLR_DCGI   = 2
 } HandlerType;
 
 extern const char *HANDLER_TYPE_NAMES[];
@@ -47,7 +48,6 @@ typedef struct st_config {
   const char *address;
   int port;
   int maxPending;
-  int cgiTimeout;
 
   ccVec TP(Route) routes;
 } Config;

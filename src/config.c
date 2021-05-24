@@ -8,11 +8,9 @@
 #define DEFAULT_ADDRESS     "127.0.0.1"
 #define DEFAULT_PORT        8080
 #define DEFAULT_MAX_PENDING 16
-#define DEFAULT_CGI_TIMEOUT 5
 
 const char *HANDLER_TYPE_NAMES[] = {
   [HDLR_SCRIPT] = "SCRIPT",
-  [HDLR_CGI]    = "CGI",
   [HDLR_STATIC] = "STATIC",
   [HDLR_DCGI]   = "DCGI"
 };
@@ -21,7 +19,6 @@ void initConfig(Config *config) {
   config->address = DEFAULT_ADDRESS;
   config->port = DEFAULT_PORT;
   config->maxPending = DEFAULT_MAX_PENDING;
-  config->cgiTimeout = DEFAULT_CGI_TIMEOUT;
   ccVecInit(&config->routes, sizeof(Route));
 }
 
@@ -49,11 +46,6 @@ static pl2b_Cmd *configPend(pl2b_Program *program,
                             pl2b_Cmd *command,
                             Error *error);
 
-static pl2b_Cmd *configCGITimeout(pl2b_Program *program,
-                                  void *context,
-                                  pl2b_Cmd *command,
-                                  Error *error);
-
 static pl2b_Cmd* addRoute(pl2b_Program *program,
                           void *context,
                           pl2b_Cmd *command,
@@ -64,7 +56,6 @@ const pl2b_Language *getCfgLanguage(void) {
     { "listen-address", NULL, configAddr,       0, 0 },
     { "listen-port",    NULL, configPort,       0, 0 },
     { "max-pending",    NULL, configPend,       0, 0 },
-    { "cgi-timeout",    NULL, configCGITimeout, 0, 0 },
     { "post",           NULL, addRoute,         0, 0 },
     { "POST",           NULL, addRoute,         0, 0 },
     { "Post",           NULL, addRoute,         0, 0 },
@@ -142,14 +133,6 @@ static pl2b_Cmd *configPend(pl2b_Program *program,
   return configIntAttr(program, &config->maxPending, command, error);
 }
 
-static pl2b_Cmd *configCGITimeout(pl2b_Program *program,
-                                  void *context,
-                                  pl2b_Cmd *command,
-                                  Error *error) {
-  Config *config = (Config*)context;
-  return configIntAttr(program, &config->cgiTimeout, command, error);
-}
-
 static pl2b_Cmd* addRoute(pl2b_Program *program,
                           void *context,
                           pl2b_Cmd *command,
@@ -183,8 +166,6 @@ static pl2b_Cmd* addRoute(pl2b_Program *program,
   const char *handlerTypeStr = command->args[1].str;
   if (stricmp(handlerTypeStr, HANDLER_TYPE_NAMES[HDLR_SCRIPT])) {
     handlerType = HDLR_SCRIPT;
-  } else if (stricmp(handlerTypeStr, HANDLER_TYPE_NAMES[HDLR_CGI])) {
-    handlerType = HDLR_CGI;
   } else if (stricmp(handlerTypeStr, HANDLER_TYPE_NAMES[HDLR_STATIC])) {
     handlerType = HDLR_STATIC;
   } else if (stricmp(handlerTypeStr, HANDLER_TYPE_NAMES[HDLR_DCGI])) {

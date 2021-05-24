@@ -24,7 +24,6 @@ all_deps: \
 
 # All headers
 HEADERS = include/agno3.h \
-	include/cgi.h \
 	include/config.h \
 	include/dcgi.h \
 	include/file_util.h \
@@ -61,7 +60,7 @@ chttpd: all_deps src/main.c
 		-o chttpd -lpthread -ldl
 
 # Build HTTP objects
-HTTP_OBJECTS := out/http.o out/cgi.o out/dcgi.o out/static.o
+HTTP_OBJECTS := out/http.o out/dcgi.o out/static.o
 
 .PHONY: http http_prompt
 http: http_prompt ${HTTP_OBJECTS}
@@ -72,10 +71,6 @@ http_prompt:
 out/http.o: src/http.c ${HEADERS}
 	@$(LOG) CC src/http.c
 	@$(CC) src/http.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/http.o
-
-out/cgi.o: src/cgi.c ${HEADERS}
-	@$(LOG) CC src/cgi.c
-	@$(CC) src/cgi.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/cgi.o
 
 out/dcgi.o: src/dcgi.c ${HEADERS}
 	@$(LOG) CC src/dcgi.c
