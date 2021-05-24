@@ -20,6 +20,11 @@ This project supoorts POSIX platform in theory. Tested on the following platform
 To build, just clone the code and run `make` in the project directory. Seems that no much
 dependencies are required.
 
+For release build, the following `CFLAGS` setup is recommended:
+```shell
+CFLAGS="-O2 -g -fstack-protector-strong" make
+```
+
 ## ⚙️ Configure
 Configuration file of `chttpd` uses PL2BK DSL. A sample configuration looks like:
 ```
