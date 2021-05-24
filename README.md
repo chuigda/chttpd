@@ -26,7 +26,6 @@ Configuration file of `chttpd` uses PL2BK DSL. A sample configuration looks like
 listen-address 127.0.0.1
 listen-port 3080
 max-pending 5
-cgi-timeout 3
 
 GET /           STATIC ./src/index.html
 GET /index.html STATIC ./src/index.html
@@ -34,10 +33,10 @@ GET /robots.txt STATIC ./src/robots.txt
 GET /api/login  DCGI   ./dcgi/liblogin.so
 ```
 
-The first four lines (`listen-address`, `listen-port`, `max-pending`, `cgi-timeout`) configures
-how the HTTP server works. When not appointed, chttpd will use default value for them
-(see `src/config.c`). Among these attributes, I don't really know what `max-pending` means
-(this is a parameter of POSIX socket listening).
+The first four lines (`listen-address`, `listen-port`, `max-pending`) configures how the HTTP
+server works. When not appointed, chttpd will use default value for them (see `src/config.c`).
+Among these attributes, I don't really know what `max-pending` means (this is a parameter of
+POSIX socket listening, see `src/main.c`).
 
 The following four lines are routes. A route has the following format:
 ```
