@@ -17,6 +17,7 @@ This project supoorts POSIX platform in theory. Tested on the following platform
   - x86_64-unknown-linux-gnu
   - i386-unknown-linux-gnu
   - i386-unknown-linux-musl
+  - cygwin x86_64
 
 To build, just clone the code and run `make` in the project directory. Seems that no much
 dependencies are required.
@@ -25,6 +26,9 @@ For release build, the following `CFLAGS` setup is recommended:
 ```shell
 CFLAGS="-O2 -g -fstack-protector-strong" make
 ```
+
+There is a plan of porting `chttpd` to Windows platform, but no timetable. Don't rely
+on this.
 
 ## ⚙️ Configure
 Configuration file of `chttpd` uses PL2BK DSL. A sample configuration looks like:
