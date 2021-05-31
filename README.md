@@ -10,6 +10,7 @@ beginner, in order not to be misleaded.
 
 ## ⚠️⚠️⚠️ KNOWN ISSUES ⚠️⚠️⚠️
  - Minor memory leak from `getdelim` function
+ - `SIGPIPE`s are simply ignored. No proof on negative effects by this time, though.
 
 ## 🔨 Build
 This project supoorts POSIX platform in theory. Tested on the following platforms:
