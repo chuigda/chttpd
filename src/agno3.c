@@ -185,7 +185,7 @@ static pl2b_Cmd* setHeader(pl2b_Program *program,
   const char *keyStr = command->args[0].str;
   // const char *valueStr = command->args[1].str;
 
-  if (stricmp(keyStr, "Content-Length")) {
+  if (strcmp_icase(keyStr, "Content-Length")) {
     formatError(error, command->sourceInfo, -1,
                "header: cannot set `Content-Length` manually");
     return NULL;
@@ -196,7 +196,7 @@ static pl2b_Cmd* setHeader(pl2b_Program *program,
 
   for (size_t i = 0; i < ccVecLen(&flask->headers); i++) {
     StringPair *pair = (StringPair*)ccVecNth(&flask->headers, i);
-    if (stricmp(pair->first, key)) {
+    if (strcmp_icase(pair->first, key)) {
       formatError(error, command->sourceInfo, -1,
                   "header: duplicate header: %s", key);
       free(key);

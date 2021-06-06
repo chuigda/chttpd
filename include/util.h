@@ -18,7 +18,7 @@ StringPair makeStringPair(const char *first, const char *second);
 StringPair copyStringPair(StringPair src);
 void dropStringPair(StringPair pair);
 
-_Bool stricmp(const char *lhs, const char *rhs);
+_Bool strcmp_icase(const char *lhs, const char *rhs);
 
 typedef enum e_log_level {
   LL_DEBUG = 0,

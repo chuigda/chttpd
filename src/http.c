@@ -101,7 +101,7 @@ HttpRequest *readHttpRequest(FILE *fp) {
   size_t contentLength = 0;
   for (size_t i = 0; i < ccVecLen(&headers); i++) {
     const StringPair *header = (const StringPair*)ccVecNth(&headers, i);
-    if (stricmp(header->first, "Content-Length")) {
+    if (strcmp_icase(header->first, "Content-Length")) {
       int length = atoi(header->second);
       if (length <= 0) {
         LOG_WARN("invalid Content-Length header value \"%s\" ignored.",

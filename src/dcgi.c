@@ -60,9 +60,9 @@ void handleDCGI(const char *dcgiLib,
           "Server: %s\r\n",
           contentLength, CHTTPD_SERVER_NAME);
   for (size_t i = 0; headerDest[i].first != NULL; i++) {
-    if (stricmp(headerDest[i].first, "Content-Length")) {
+    if (strcmp_icase(headerDest[i].first, "Content-Length")) {
       LOG_WARN("Manually setting \"Content-Length\", ignored");
-    } else if (stricmp(headerDest[i].first, "")) {
+    } else if (strcmp_icase(headerDest[i].first, "Connection")) {
       LOG_WARN("Manually setting \"Connection\", ignored");
     } else {
       fprintf(response, "%s: %s\r\n",

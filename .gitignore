@@ -15,6 +15,7 @@ include_ext/
 src_ext/
 out/
 
+*.exe
 chttpd
 *.swp
 /*.cfg

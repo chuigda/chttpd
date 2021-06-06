@@ -71,17 +71,17 @@ static const char *mimeGuess(const char *filePath) {
     return "application/octet-stream";
   }
 
-  if (stricmp(postfix, ".html")) {
+  if (strcmp_icase(postfix, ".html")) {
     return "text/html";
-  } else if (stricmp(postfix, ".js")) {
+  } else if (strcmp_icase(postfix, ".js")) {
     return "text/javascript";
-  } else if (stricmp(postfix, ".css")) {
+  } else if (strcmp_icase(postfix, ".css")) {
     return "text/css";
-  } else if (stricmp(postfix, ".json")) {
+  } else if (strcmp_icase(postfix, ".json")) {
     return "application/json";
-  } else if (stricmp(postfix, ".xml")) {
+  } else if (strcmp_icase(postfix, ".xml")) {
     return "application/xml";
-  } else if (stricmp(postfix, ".txt")) {
+  } else if (strcmp_icase(postfix, ".txt")) {
     return "text/plain";
   }
   

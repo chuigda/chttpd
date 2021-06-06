@@ -23,7 +23,7 @@ void dropStringPair(StringPair pair) {
   free(pair.second);
 }
 
-_Bool stricmp(const char *lhs, const char *rhs) {
+_Bool strcmp_icase(const char *lhs, const char *rhs) {
   while (*lhs != '\0' && *lhs != '\0') {
     if (tolower(*lhs) != tolower(*rhs)) {
       return 0;

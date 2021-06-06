@@ -164,11 +164,14 @@ static pl2b_Cmd* addRoute(pl2b_Program *program,
 
   HandlerType handlerType;
   const char *handlerTypeStr = command->args[1].str;
-  if (stricmp(handlerTypeStr, HANDLER_TYPE_NAMES[HDLR_SCRIPT])) {
+  if (strcmp_icase(handlerTypeStr,
+                   HANDLER_TYPE_NAMES[HDLR_SCRIPT])) {
     handlerType = HDLR_SCRIPT;
-  } else if (stricmp(handlerTypeStr, HANDLER_TYPE_NAMES[HDLR_STATIC])) {
+  } else if (strcmp_icase(handlerTypeStr,
+                          HANDLER_TYPE_NAMES[HDLR_STATIC])) {
     handlerType = HDLR_STATIC;
-  } else if (stricmp(handlerTypeStr, HANDLER_TYPE_NAMES[HDLR_DCGI])) {
+  } else if (strcmp_icase(handlerTypeStr,
+                          HANDLER_TYPE_NAMES[HDLR_DCGI])) {
     handlerType = HDLR_DCGI;
   } else {
     formatError(error, command->sourceInfo, -1,
