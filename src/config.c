@@ -42,7 +42,7 @@ static pl2b_Cmd *configIntAttr(pl2b_Program *program,
                                int lowerBound,
                                int upperBound);
 
-static pl2b_Cmd *configBooLAttr(pl2b_Program *program,
+static pl2b_Cmd *configBoolAttr(pl2b_Program *program,
                                 int *dest,
                                 pl2b_Cmd *command,
                                 Error *error);
@@ -177,8 +177,8 @@ static pl2b_Cmd *configPort(pl2b_Program *program,
                        &config->port,
                        command,
                        error,
-                       INT_MIN,
-                       INT_MIN);
+                       0,
+                       65536);
 }
 
 static pl2b_Cmd *configPend(pl2b_Program *program,
@@ -278,6 +278,8 @@ static pl2b_Cmd* addRoute(pl2b_Program *program,
     if (isError(error)) {
       return NULL;
     }
+  } else {
+    route->routeExtra = NULL;
   }
 
   ccVecPushBack(&config->routes, (void*)route);
