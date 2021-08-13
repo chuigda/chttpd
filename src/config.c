@@ -1,4 +1,5 @@
 #include "config.h"
+#include "dcgi.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -269,6 +270,13 @@ static pl2b_Cmd* addRoute(pl2b_Program *program,
   route->path = path;
   route->handlerType = handlerType;
   route->handlerPath = handler;
+
+  if (route->handlerType == HDLR_DCGI && config->preloadDynamic) {
+    route->routeExtra = loadDCGILibrary(route->path, NULL, error);
+    if (isError(error)) {
+      return NULL;
+    }
+  }
 
   ccVecPushBack(&config->routes, (void*)route);
 

@@ -34,15 +34,19 @@ dcgi_Function *loadDCGILibrary(const char *dcgiLib,
 }
 
 void handleDCGI(const char *dcgiLib,
+                dcgi_Function *preloaded,
                 HttpRequest *request,
                 FILE *response,
                 Error *error) {
   void *libHandle = NULL;
-  dcgi_Function *function = loadDCGILibrary(dcgiLib,
-                                            &libHandle,
-                                            error);
-  if (isError(error)) {
-    return;
+  dcgi_Function *function = preloaded;
+  if (preloaded == NULL) {
+      function = loadDCGILibrary(dcgiLib,
+                                 &libHandle,
+                                 error);
+    if (isError(error)) {
+      return;
+    }
   }
 
   StringPair sentry = (StringPair){ NULL, NULL };
@@ -101,10 +105,11 @@ void handleDCGI(const char *dcgiLib,
   }
 
 close_handle_ret:
-  if (dlclose(libHandle) != 0) {
+  if (preloaded == NULL && dlclose(libHandle) != 0) {
     if (!isError(error)) {
       QUICK_ERROR2(error, 500, "error closing DCGI library: %s", 
                    dlerror());
     }
   }
 }
+

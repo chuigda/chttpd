@@ -18,6 +18,7 @@ dcgi_Function *loadDCGILibrary(const char *dcgiLib,
                                Error *error);
 
 void handleDCGI(const char *dcgiLib,
+                dcgi_Function *preloaded,
                 HttpRequest *httpRequest,
                 FILE *response,
                 Error *error);

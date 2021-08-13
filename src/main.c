@@ -298,7 +298,11 @@ static void routeAndHandle(const Config *config,
         handleStatic(route->handlerPath, fp, error);
         break;
       case HDLR_DCGI:
-        handleDCGI(route->handlerPath, request, fp, error);
+        handleDCGI(route->handlerPath,
+                   (dcgi_Function*)route->routeExtra,
+                   request,
+                   fp,
+                   error);
         break;
       }
       return;
