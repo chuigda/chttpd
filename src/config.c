@@ -72,6 +72,7 @@ const pl2b_Language *getCfgLanguage(void) {
     { "listen-address", NULL, configAddr,       0, 0 },
     { "listen-port",    NULL, configPort,       0, 0 },
     { "max-pending",    NULL, configPend,       0, 0 },
+    { "preload",        NULL, configPreloadDyn, 0, 0 },
     { "post",           NULL, addRoute,         0, 0 },
     { "POST",           NULL, addRoute,         0, 0 },
     { "Post",           NULL, addRoute,         0, 0 },
@@ -193,10 +194,10 @@ static pl2b_Cmd *configPend(pl2b_Program *program,
                        INT_MIN);
 }
 
-static pl2b_Cmd *configPreloadDynamic(pl2b_Program *program,
-                                      void *context,
-                                      pl2b_Cmd *command,
-                                      Error *error) {
+static pl2b_Cmd *configPreloadDyn(pl2b_Program *program,
+                                  void *context,
+                                  pl2b_Cmd *command,
+                                  Error *error) {
   Config *config = (Config*)context;
   return configBoolAttr(program,
                         &config->preloadDynamic,
@@ -271,8 +272,9 @@ static pl2b_Cmd* addRoute(pl2b_Program *program,
   route->handlerType = handlerType;
   route->handlerPath = handler;
 
-  if (route->handlerType == HDLR_DCGI && config->preloadDynamic) {
-    route->routeExtra = loadDCGILibrary(route->path, NULL, error);
+  if (route->handlerType == HDLR_DCGI && config->preloadDynamic != 0) {
+    LOG_DBG("preloading dynamic library \"%s\"", route->handlerPath);
+    route->routeExtra = loadDCGILibrary(route->handlerPath, NULL, error);
     if (isError(error)) {
       return NULL;
     }

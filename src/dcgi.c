@@ -41,12 +41,14 @@ void handleDCGI(const char *dcgiLib,
   void *libHandle = NULL;
   dcgi_Function *function = preloaded;
   if (preloaded == NULL) {
-      function = loadDCGILibrary(dcgiLib,
-                                 &libHandle,
-                                 error);
+    function = loadDCGILibrary(dcgiLib,
+                               &libHandle,
+                               error);
     if (isError(error)) {
       return;
     }
+  } else {
+    LOG_DBG("using preloaded library");
   }
 
   StringPair sentry = (StringPair){ NULL, NULL };

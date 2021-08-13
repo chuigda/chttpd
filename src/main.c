@@ -84,6 +84,8 @@ int main(int argc, const char *argv[]) {
 
   LOG_INFO("chttpd listening to: %s:%d", config.address, config.port);
   LOG_INFO(" - max pending count set to %d", config.maxPending);
+  LOG_INFO(" - DCGI preloading %s",
+           config.preloadDynamic ? "enabled" : "disabled");
   for (size_t i = 0; i < ccVecLen(&config.routes); i++) {
     Route *route = (Route*)ccVecNth(&config.routes, i);
     LOG_INFO(" - route \"%s %s\" to \"%s %s\"",
