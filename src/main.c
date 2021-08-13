@@ -86,6 +86,11 @@ int main(int argc, const char *argv[]) {
   LOG_INFO(" - max pending count set to %d", config.maxPending);
   LOG_INFO(" - DCGI preloading %s",
            config.preloadDynamic ? "enabled" : "disabled");
+  if (config.cacheTime >= 0) {
+    LOG_INFO(" - cache expiration set to %d", config.cacheTime);
+  } else {
+    LOG_INFO(" - cache disabled");
+  }
   for (size_t i = 0; i < ccVecLen(&config.routes); i++) {
     Route *route = (Route*)ccVecNth(&config.routes, i);
     LOG_INFO(" - route \"%s %s\" to \"%s %s\"",
@@ -214,6 +219,7 @@ static const char *ERROR_PAGE_500_HEAD =
 static const char *GENERAL_HEADERS = 
 "Content-Type: text/html\r\n"
 "Content-Encoding: identity\r\n"
+"Cache-Control: public, max-age=1800\r\n"
 "Connection: close\r\n\r\n";
 
 static void* httpHandler(void *context) {
@@ -297,7 +303,7 @@ static void routeAndHandle(const Config *config,
         QUICK_ERROR(error, 500, "SCRIPT not supported yet");
         break;
       case HDLR_STATIC:
-        handleStatic(route->handlerPath, fp, error);
+        handleStatic(route->handlerPath, fp, config->cacheTime, error);
         break;
       case HDLR_DCGI:
         handleDCGI(route->handlerPath,

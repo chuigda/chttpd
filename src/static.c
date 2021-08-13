@@ -10,6 +10,7 @@ static const char *mimeGuess(const char *filePath);
 
 void handleStatic(const char *filePath,
                   FILE *fp,
+                  int cacheTime,
                   Error *error) {
   FILE *fpFile = fopen(filePath, "r");
   if (fpFile == NULL) {
@@ -46,8 +47,15 @@ void handleStatic(const char *filePath,
           "Connection: close\r\n"
           "Content-Encoding: identity\r\n"
           "Content-Type: %s\r\n"
-          "Content-Length: %zi\r\n\r\n",
-          CHTTPD_SERVER_NAME, mimeGuess(filePath), fileSize);
+          "Content-Length: %zi\r\n",
+          CHTTPD_SERVER_NAME,
+          mimeGuess(filePath),
+          fileSize);
+  if (cacheTime >= 0) {
+    fprintf(fp, "Cache-Control: public, max-age=%d\r\n\r\n", cacheTime);
+  } else {
+    fprintf(fp, "Cache-Control: no-cache\r\n\r\n");
+  }
   if (errno != 0) {
     LOG_WARN("failed to write response header: %d", errno);
     goto free_buf_ret;

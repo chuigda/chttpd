@@ -11,6 +11,7 @@
 #define DEFAULT_PORT            8080
 #define DEFAULT_MAX_PENDING     16
 #define DEFAULT_PRELOAD_DYNAMIC 0
+#define DEFAULT_CACHE_TIME      (-1)
 
 const char *HANDLER_TYPE_NAMES[] = {
   [HDLR_SCRIPT] = "SCRIPT",
@@ -23,6 +24,7 @@ void initConfig(Config *config) {
   config->port = DEFAULT_PORT;
   config->maxPending = DEFAULT_MAX_PENDING;
   config->preloadDynamic = DEFAULT_PRELOAD_DYNAMIC;
+  config->cacheTime = DEFAULT_CACHE_TIME;
   ccVecInit(&config->routes, sizeof(Route));
 }
 
@@ -62,6 +64,11 @@ static pl2b_Cmd *configPreloadDyn(pl2b_Program *program,
                                   pl2b_Cmd *command,
                                   Error *error);
 
+static pl2b_Cmd *configCacheTime(pl2b_Program *program,
+                                 void *context,
+                                 pl2b_Cmd *command,
+                                 Error *error);
+
 static pl2b_Cmd *addRoute(pl2b_Program *program,
                           void *context,
                           pl2b_Cmd *command,
@@ -73,6 +80,7 @@ const pl2b_Language *getCfgLanguage(void) {
     { "listen-port",    NULL, configPort,       0, 0 },
     { "max-pending",    NULL, configPend,       0, 0 },
     { "preload",        NULL, configPreloadDyn, 0, 0 },
+    { "cache-time",     NULL, configCacheTime,  0, 0 },
     { "post",           NULL, addRoute,         0, 0 },
     { "POST",           NULL, addRoute,         0, 0 },
     { "Post",           NULL, addRoute,         0, 0 },
@@ -203,6 +211,19 @@ static pl2b_Cmd *configPreloadDyn(pl2b_Program *program,
                         &config->preloadDynamic,
                         command,
                         error);
+}
+
+static pl2b_Cmd *configCacheTime(pl2b_Program *program,
+                                 void *context,
+                                 pl2b_Cmd *command,
+                                 Error *error) {
+  Config *config = (Config*)context;
+  return configIntAttr(program,
+                       &config->cacheTime,
+                       command,
+                       error,
+                       -1,
+                       31536000);
 }
 
 static pl2b_Cmd* addRoute(pl2b_Program *program,

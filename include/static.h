@@ -6,6 +6,7 @@
 
 void handleStatic(const char *filePath,
                   FILE *fp,
+                  int cacheTime,
                   Error *error);
 
 #endif /* CHTTPD_STATIC_H */

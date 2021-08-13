@@ -51,6 +51,7 @@ typedef struct st_config {
   int port;
   int maxPending;
   int preloadDynamic;
+  int cacheTime;
 
   ccVec TP(Route) routes;
 } Config;
