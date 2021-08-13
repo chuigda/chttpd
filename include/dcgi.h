@@ -12,6 +12,11 @@ typedef int (dcgi_Function)(const char *queryPath,
                             StringPair **headerDest,
                             char **dataDest,
                             char **errDest);
+
+dcgi_Function *loadDCGILibrary(const char *dcgiLib,
+                               void **libHandleDest,
+                               Error *error);
+
 void handleDCGI(const char *dcgiLib,
                 HttpRequest *httpRequest,
                 FILE *response,

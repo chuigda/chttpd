@@ -1,13 +1,15 @@
 #include "config.h"
 
 #include <assert.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define DEFAULT_ADDRESS     "127.0.0.1"
-#define DEFAULT_PORT        8080
-#define DEFAULT_MAX_PENDING 16
+#define DEFAULT_ADDRESS         "127.0.0.1"
+#define DEFAULT_PORT            8080
+#define DEFAULT_MAX_PENDING     16
+#define DEFAULT_PRELOAD_DYNAMIC 0
 
 const char *HANDLER_TYPE_NAMES[] = {
   [HDLR_SCRIPT] = "SCRIPT",
@@ -19,6 +21,7 @@ void initConfig(Config *config) {
   config->address = DEFAULT_ADDRESS;
   config->port = DEFAULT_PORT;
   config->maxPending = DEFAULT_MAX_PENDING;
+  config->preloadDynamic = DEFAULT_PRELOAD_DYNAMIC;
   ccVecInit(&config->routes, sizeof(Route));
 }
 
@@ -34,9 +37,16 @@ static pl2b_Cmd* configAddr(pl2b_Program *program,
 static pl2b_Cmd *configIntAttr(pl2b_Program *program,
                                int *dest,
                                pl2b_Cmd *command,
-                               Error *error);
+                               Error *error,
+                               int lowerBound,
+                               int upperBound);
 
-static pl2b_Cmd* configPort(pl2b_Program *program,
+static pl2b_Cmd *configBooLAttr(pl2b_Program *program,
+                                int *dest,
+                                pl2b_Cmd *command,
+                                Error *error);
+
+static pl2b_Cmd *configPort(pl2b_Program *program,
                             void *context,
                             pl2b_Cmd *command,
                             Error *error);
@@ -46,7 +56,12 @@ static pl2b_Cmd *configPend(pl2b_Program *program,
                             pl2b_Cmd *command,
                             Error *error);
 
-static pl2b_Cmd* addRoute(pl2b_Program *program,
+static pl2b_Cmd *configPreloadDyn(pl2b_Program *program,
+                                  void *context,
+                                  pl2b_Cmd *command,
+                                  Error *error);
+
+static pl2b_Cmd *addRoute(pl2b_Program *program,
                           void *context,
                           pl2b_Cmd *command,
                           Error *error);
@@ -96,24 +111,58 @@ static pl2b_Cmd* configAddr(pl2b_Program *program,
 static pl2b_Cmd *configIntAttr(pl2b_Program *program,
                                int *dest,
                                pl2b_Cmd *command,
-                               Error *error) {
+                               Error *error,
+                               int lowerBound,
+                               int upperBound) {
   (void)program;
 
   if (pl2b_argsLen(command) != 1) {
     formatError(error, command->sourceInfo, -1,
-                "listen-port: expects exactly one argument");
+                "%s: expects exactly one argument",
+                command->cmd.str);
     return NULL;
   }
 
   int value = atoi(command->args[0].str);
-  if (value <= 0 || value >= 65536) {
+  if ((lowerBound != INT_MIN && value <= lowerBound)
+      || (upperBound != INT_MIN && value >= upperBound)) {
     formatError(error, command->sourceInfo, -1,
-                "%s: invalid port: %s",
-                command->cmd, command->args[0].str);
+                "%s: invalid value: %s",
+                command->cmd.str,
+                command->args[0].str);
     return NULL;
   }
 
   *dest = value;
+  return command->next;
+}
+
+static pl2b_Cmd *configBoolAttr(pl2b_Program *program,
+                                int *dest,
+                                pl2b_Cmd *command,
+                                Error *error) {
+  (void)program;
+
+  if (pl2b_argsLen(command) != 1) {
+    formatError(error, command->sourceInfo, -1,
+                "%s: expects exactly one argument",
+                command->cmd.str);
+    return NULL;
+  }
+
+  if (strcmp_icase(command->args[0].str, "true")
+      || !strcmp(command->args[0].str, "1")) {
+    *dest = 1;
+  } else if (strcmp_icase(command->args[0].str, "false")
+             || !strcmp(command->args[0].str, "0")) {
+    *dest = 0;
+  } else {
+    formatError(error, command->sourceInfo, -1,
+                "%s: expects 'true', 'false', '1' or '0'",
+                command->cmd.str);
+    return NULL;
+  }
+
   return command->next;
 }
 
@@ -122,7 +171,12 @@ static pl2b_Cmd *configPort(pl2b_Program *program,
                             pl2b_Cmd *command,
                             Error *error) {
   Config *config = (Config*)context;
-  return configIntAttr(program, &config->port, command, error);
+  return configIntAttr(program,
+                       &config->port,
+                       command,
+                       error,
+                       INT_MIN,
+                       INT_MIN);
 }
 
 static pl2b_Cmd *configPend(pl2b_Program *program,
@@ -130,7 +184,23 @@ static pl2b_Cmd *configPend(pl2b_Program *program,
                             pl2b_Cmd *command,
                             Error *error) {
   Config *config = (Config*)context;
-  return configIntAttr(program, &config->maxPending, command, error);
+  return configIntAttr(program,
+                       &config->maxPending,
+                       command,
+                       error,
+                       INT_MIN,
+                       INT_MIN);
+}
+
+static pl2b_Cmd *configPreloadDynamic(pl2b_Program *program,
+                                      void *context,
+                                      pl2b_Cmd *command,
+                                      Error *error) {
+  Config *config = (Config*)context;
+  return configBoolAttr(program,
+                        &config->preloadDynamic,
+                        command,
+                        error);
 }
 
 static pl2b_Cmd* addRoute(pl2b_Program *program,
