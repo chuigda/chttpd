@@ -307,7 +307,7 @@ static void routeAndHandle(const Config *config,
         break;
       case HDLR_DCGI:
         handleDCGI(route->handlerPath,
-                   (dcgi_Function*)route->routeExtra,
+                   (DCGIModule*)route->extra,
                    request,
                    fp,
                    error);

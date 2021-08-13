@@ -43,7 +43,7 @@ typedef struct st_route {
   HandlerType handlerType;
   const char *handlerPath;
 
-  void *routeExtra;
+  void *extra;
 } Route;
 
 typedef struct st_config {

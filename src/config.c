@@ -295,15 +295,16 @@ static pl2b_Cmd* addRoute(pl2b_Program *program,
 
   if (route->handlerType == HDLR_DCGI && config->preloadDynamic != 0) {
     LOG_DBG("preloading dynamic library \"%s\"", route->handlerPath);
-    route->routeExtra = loadDCGILibrary(route->handlerPath, NULL, error);
+    route->extra = loadDCGIModule(route->handlerPath, error);
     if (isError(error)) {
       return NULL;
     }
   } else {
-    route->routeExtra = NULL;
+    route->extra = NULL;
   }
 
   ccVecPushBack(&config->routes, (void*)route);
 
   return command->next;
 }
+

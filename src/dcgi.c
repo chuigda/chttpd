@@ -6,9 +6,8 @@
 #include "config.h"
 #include "util.h"
 
-dcgi_Function *loadDCGILibrary(const char *dcgiLib,
-                               void **libHandleDest,
-                               Error *error) {
+DCGIModule *loadDCGIModule(const char *dcgiLib,
+                           Error *error) {
   void *libHandle = dlopen(dcgiLib, RTLD_NOW);
 
   if (libHandle == NULL) {
@@ -17,33 +16,45 @@ dcgi_Function *loadDCGILibrary(const char *dcgiLib,
     return NULL;
   }
 
-  void *handler = dlsym(libHandle, "dcgi_main");
-  if (handler == NULL) {
+  void *dcgiMain = dlsym(libHandle, "dcgi_main");
+  if (dcgiMain == NULL) {
+    QUICK_ERROR2(error, 500, "error locating 'dcgi_main' on \"%s\": %s",
+                 dcgiLib, dlerror());
     if (dlclose(libHandle) != 0) {
       LOG_WARN("cannot close dynamic loaded library handle: %s",
                dlerror());
     }
-    QUICK_ERROR2(error, 500, "error locating 'dcgi_main' on \"%s\": %s",
-                 dcgiLib, dlerror());
     return NULL;
   }
-  if (libHandleDest != NULL) {
-    *libHandleDest = libHandle;
+
+  void *dcgiDealloc = dlsym(libHandle, "dcgi_dealloc");
+  if (dcgiDealloc == NULL) {
+    LOG_WARN("this DCGI module appear to have no \"dcgi_dealloc\"");
+    LOG_WARN("this may cause bugs, be cautious!");
   }
-  return (dcgi_Function*)handler;
+
+  DCGIModule *module = (DCGIModule*)malloc(sizeof(DCGIModule));
+  module->dcgiMain = (DCGIMain*)dcgiMain;
+  module->dcgiDealloc = (DCGIDealloc*)dcgiDealloc;
+  return module;
+}
+
+void unloadDCGIModule(DCGIModule *module, Error *error) {
+  if (dlclose(module->libHandle) != 0) {
+    QUICK_ERROR2(error, 500, "error closing DCGI library: %s",
+                 dlerror());
+  }
+  free(module);
 }
 
 void handleDCGI(const char *dcgiLib,
-                dcgi_Function *preloaded,
+                DCGIModule *preloaded,
                 HttpRequest *request,
                 FILE *response,
                 Error *error) {
-  void *libHandle = NULL;
-  dcgi_Function *function = preloaded;
+  DCGIModule *module = preloaded;
   if (preloaded == NULL) {
-    function = loadDCGILibrary(dcgiLib,
-                               &libHandle,
-                               error);
+    module = loadDCGIModule(dcgiLib, error);
     if (isError(error)) {
       return;
     }
@@ -59,20 +70,21 @@ void handleDCGI(const char *dcgiLib,
   char *dataDest = NULL;
   char *errDest = NULL;
   
-  int res = function(request->requestPath,
-                     (const StringPair*)ccVecData(&request->headers),
-                     (const StringPair*)ccVecData(&request->params),
-                     request->body,
-                     &headerDest, &dataDest, &errDest);
+  int res = module->dcgiMain(
+              request->requestPath,
+              (const StringPair*)ccVecData(&request->headers),
+              (const StringPair*)ccVecData(&request->params),
+              request->body,
+              &headerDest, &dataDest, &errDest
+            );
   if (res != 0 && res != 200) {
     if (errDest != NULL) {
       QUICK_ERROR2(error, 500, "error running DCGI function: %s",
                    errDest);
-      free(errDest);
     } else {
       QUICK_ERROR(error, 500, "error running DCGI function");
     }
-    goto close_handle_ret;
+    goto unload_module_ret;
   }
 
   size_t contentLength = 0;
@@ -87,31 +99,60 @@ void handleDCGI(const char *dcgiLib,
           "Connection: close\r\n"
           "Server: %s\r\n",
           contentLength, CHTTPD_SERVER_NAME);
-  for (size_t i = 0; headerDest[i].first != NULL; i++) {
-    if (strcmp_icase(headerDest[i].first, "Content-Length")) {
+
+  size_t headerCount = 0;
+  for (; headerDest[headerCount].first != NULL; headerCount++) {
+    const char *headerKey = headerDest[headerCount].first;
+    const char *headerValue = headerDest[headerCount].second;
+    if (strcmp_icase(headerKey, "Content-Length")) {
       LOG_WARN("Manually setting \"Content-Length\", ignored");
-    } else if (strcmp_icase(headerDest[i].first, "Connection")) {
+    } else if (strcmp_icase(headerKey, "Connection")) {
       LOG_WARN("Manually setting \"Connection\", ignored");
     } else {
-      fprintf(response, "%s: %s\r\n",
-              headerDest[i].first, headerDest[i].second);
+      fprintf(response, "%s: %s\r\n", headerKey, headerValue);
     }
-    free(headerDest[i].first);
-    free(headerDest[i].second);
   }
-  free(headerDest);
   
   if (dataDest != NULL) {
     fprintf(response, "\r\n%s", dataDest);
-    free(dataDest);
   }
 
-close_handle_ret:
-  if (preloaded == NULL && dlclose(libHandle) != 0) {
-    if (!isError(error)) {
-      QUICK_ERROR2(error, 500, "error closing DCGI library: %s", 
-                   dlerror());
+  if (module->dcgiDealloc != NULL) {
+    DCGIDealloc *dealloc = module->dcgiDealloc;
+    for (size_t i = 0; i < headerCount; i++) {
+      char *headerKey = headerDest[i].first;
+      char *headerValue = headerDest[i].second;
+      dealloc(headerKey, strlen(headerKey) + 1, _Alignof(char));
+      dealloc(headerValue, strlen(headerValue) + 1, _Alignof(char));
     }
+    dealloc(headerDest,
+            sizeof(StringPair) * (headerCount + 1),
+            _Alignof(StringPair));
+    if (dataDest) {
+      dealloc(dataDest, strlen(dataDest) + 1, _Alignof(char));
+    }
+  } else {
+    for (size_t i = 0; i < headerCount; i++) {
+      free(headerDest[i].first);
+      free(headerDest[i].second);
+    }
+    free(headerDest);
+    if (dataDest) {
+      free(dataDest);
+    }
+  }
+
+unload_module_ret:
+  if (errDest) {
+    if (module->dcgiDealloc) {
+      module->dcgiDealloc(errDest, strlen(errDest) + 1, _Alignof(char));
+    } else {
+      free(errDest);
+    }
+  }
+
+  if (preloaded == NULL) {
+    unloadDCGIModule(module, error);
   }
 }
 
