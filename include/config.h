@@ -42,12 +42,15 @@ typedef struct st_route {
   const char *path;
   HandlerType handlerType;
   const char *handlerPath;
+
+  void *routeExtra;
 } Route;
 
 typedef struct st_config {
   const char *address;
   int port;
   int maxPending;
+  int preloadDynamic;
 
   ccVec TP(Route) routes;
 } Config;

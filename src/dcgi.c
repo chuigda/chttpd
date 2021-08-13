@@ -6,23 +6,51 @@
 #include "config.h"
 #include "util.h"
 
-void handleDCGI(const char *dcgiLib,
-                HttpRequest *request,
-                FILE *response,
-                Error *error) {
+dcgi_Function *loadDCGILibrary(const char *dcgiLib,
+                               void **libHandleDest,
+                               Error *error) {
   void *libHandle = dlopen(dcgiLib, RTLD_NOW);
+
   if (libHandle == NULL) {
     QUICK_ERROR2(error, 500, "error opening DCGI library \"%s\": %s",
                  dcgiLib, dlerror());
-    return;
+    return NULL;
   }
 
   void *handler = dlsym(libHandle, "dcgi_main");
   if (handler == NULL) {
-    goto close_handle_ret;
+    if (dlclose(libHandle) != 0) {
+      LOG_WARN("cannot close dynamic loaded library handle: %s",
+               dlerror());
+    }
+    QUICK_ERROR2(error, 500, "error locating 'dcgi_main' on \"%s\": %s",
+                 dcgiLib, dlerror());
+    return NULL;
+  }
+  if (libHandleDest != NULL) {
+    *libHandleDest = libHandle;
+  }
+  return (dcgi_Function*)handler;
+}
+
+void handleDCGI(const char *dcgiLib,
+                dcgi_Function *preloaded,
+                HttpRequest *request,
+                FILE *response,
+                Error *error) {
+  void *libHandle = NULL;
+  dcgi_Function *function = preloaded;
+  if (preloaded == NULL) {
+    function = loadDCGILibrary(dcgiLib,
+                               &libHandle,
+                               error);
+    if (isError(error)) {
+      return;
+    }
+  } else {
+    LOG_DBG("using preloaded library");
   }
 
-  dcgi_Function *function = (dcgi_Function*)handler;
   StringPair sentry = (StringPair){ NULL, NULL };
   ccVecPushBack(&request->params, &sentry);
   ccVecPushBack(&request->headers, &sentry);
@@ -79,10 +107,11 @@ void handleDCGI(const char *dcgiLib,
   }
 
 close_handle_ret:
-  if (dlclose(libHandle) != 0) {
+  if (preloaded == NULL && dlclose(libHandle) != 0) {
     if (!isError(error)) {
       QUICK_ERROR2(error, 500, "error closing DCGI library: %s", 
                    dlerror());
     }
   }
 }
+
