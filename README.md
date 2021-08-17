@@ -36,6 +36,8 @@ Configuration file of `chttpd` uses PL2BK DSL. A sample configuration looks like
 listen-address 127.0.0.1
 listen-port 3080
 max-pending 5
+cache-time 1800
+preload true
 
 GET /           STATIC ./src/index.html
 GET /index.html STATIC ./src/index.html
@@ -43,12 +45,19 @@ GET /robots.txt STATIC ./src/robots.txt
 GET /api/login  DCGI   ./dcgi/liblogin.so
 ```
 
-The first four lines (`listen-address`, `listen-port`, `max-pending`) configures how the HTTP
+The first 5 lines (`listen-address`, `listen-port`, `max-pending`) configures how the HTTP
 server works. When not appointed, chttpd will use default value for them (see `src/config.c`).
 Among these attributes, I don't really know what `max-pending` means (this is a parameter of
 POSIX socket listening, see `src/main.c`).
 
-The following four lines are routes. A route has the following format:
+`cache-time` controls the caching mechanism of HTTP. If `cache-time` was set to a non-negative
+value, a corresponding `Cache-Control` will be added when serving static files.
+
+`preload` controls the loading mechanism of DCGI. When set to `true`, chttpd loads all DCGI
+libraries ahead of time, and keep them alive all the time; when `false`, chttpd load a DCGI
+library before handling one request, and unloads that library after finishing the request.
+
+The following 4 lines are routes. A route has the following format:
 ```
 HTTP-METHOD request-path HANDLER-TYPE handler-path
 ```
