@@ -304,7 +304,7 @@ static pl2b_Cmd* addRoute(pl2b_Program *program,
   size_t routeCount = ccVecSize(&config->routes);
   for (size_t i = 0; i < routeCount; i++) {
     Route *route = (Route*)ccVecNth(&config->routes, i);
-    if (!strcmp(route->path, path)) {
+    if (!strcmp(route->path, path) && route->httpMethod == method) {
       formatError(error, command->sourceInfo, -1,
                   "%s: handler for path \"%s\" already exists",
                   methodStr, path);

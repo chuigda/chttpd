@@ -69,15 +69,18 @@ void handleDCGI(const char *dcgiLib,
   StringPair *headerDest = NULL;
   char *dataDest = NULL;
   char *errDest = NULL;
-  
+
   int res = module->dcgiMain(
+              request->method,
               request->requestPath,
               (const StringPair*)ccVecData(&request->headers),
               (const StringPair*)ccVecData(&request->params),
               request->body,
-              &headerDest, &dataDest, &errDest
+              &headerDest,
+              &dataDest,
+              &errDest
             );
-  if (res != 0 && res != 200) {
+  if (res == 500) {
     if (errDest != NULL) {
       QUICK_ERROR2(error, 500, "error running DCGI function: %s",
                    errDest);
@@ -93,12 +96,15 @@ void handleDCGI(const char *dcgiLib,
   }
 
   fprintf(response,
-          "HTTP/1.1 200 Ok\r\n"
+          "HTTP/1.1 %d %s\r\n"
           "Content-Encoding: identity\r\n"
           "Content-Length: %zu\r\n"
           "Connection: close\r\n"
           "Server: %s\r\n",
-          contentLength, CHTTPD_SERVER_NAME);
+          res,
+          httpCodeNameSafe(res),
+          contentLength,
+          CHTTPD_SERVER_NAME);
 
   size_t headerCount = 0;
   for (; headerDest[headerCount].first != NULL; headerCount++) {

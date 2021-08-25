@@ -5,7 +5,8 @@
 #include "error.h"
 #include "http.h"
 
-typedef int (DCGIMain)(const char *queryPath,
+typedef int (DCGIMain)(int requestMethod,
+		                   const char *queryPath,
                        const StringPair *headers,
                        const StringPair *params,
                        const char *body,

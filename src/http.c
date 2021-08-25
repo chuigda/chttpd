@@ -20,8 +20,16 @@ const char *HTTP_CODE_NAMES[] = {
   [HTTP_CODE_UNAUTHORIZED] = "Unauthorised",
   [HTTP_CODE_FORBIDDEN] = "Forbidden",
   [HTTP_CODE_NOT_FOUND] = "Not Found",
-  [HTTP_CODE_SERVER_ERR] = "Internal Server Error"
+  [HTTP_CODE_SERVER_ERR] = "Internal Server Error",
 };
+
+const char *httpCodeNameSafe(int httpCode) {
+  const char *ret = HTTP_CODE_NAMES[httpCode];
+  if (ret == NULL) {
+    ret = "Unknown";
+  }
+  return ret;
+}
 
 void dropHttpRequest(HttpRequest *request) {
   for (size_t i = 0; i < ccVecLen(&request->headers); i++) {

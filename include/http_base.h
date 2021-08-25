@@ -19,4 +19,6 @@ typedef enum e_http_code {
 extern const char *HTTP_METHOD_NAMES[];
 extern const char *HTTP_CODE_NAMES[];
 
+const char *httpCodeNameSafe(int httpCode);
+
 #endif /* HTTP_BASE_H */

@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include "Error.h"
+#include "error.h"
 
 extern const char *ERROR_PAGE_403_CONTENT;
 extern const char *ERROR_PAGE_404_CONTENT;
