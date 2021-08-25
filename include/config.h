@@ -50,7 +50,8 @@ typedef struct st_config {
   const char *address;
   int port;
   int maxPending;
-  int preloadDynamic;
+  _Bool preloadDynamic;
+  _Bool ignoreCase;
   int cacheTime;
 
   ccVec TP(Route) routes;

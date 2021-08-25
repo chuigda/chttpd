@@ -38,6 +38,7 @@ listen-port 3080
 max-pending 5
 cache-time 1800
 preload true
+case-ignore true
 
 GET /           STATIC ./src/index.html
 GET /index.html STATIC ./src/index.html
@@ -56,6 +57,8 @@ value, a corresponding `Cache-Control` will be added when serving static files.
 `preload` controls the loading mechanism of DCGI. When set to `true`, chttpd loads all DCGI
 libraries ahead of time, and keep them alive all the time; when `false`, chttpd load a DCGI
 library before handling one request, and unloads that library after finishing the request.
+
+`case-ignore` controls whether the router cares about letter cases.
 
 The following 4 lines are routes. A route has the following format:
 ```

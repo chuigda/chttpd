@@ -34,6 +34,46 @@ _Bool strcmp_icase(const char *lhs, const char *rhs) {
   return *lhs == *rhs;
 }
 
+_Bool urlcmp(const char *url, const char *pattern) {
+  if (pattern[0] == '!') {
+    return !strcmp(url, pattern + 1);
+  }
+
+  while (*url != '\0' && *pattern != '\0') {
+    if (*url != *pattern) {
+      return 0;
+    }
+    ++url;
+    ++pattern;
+  }
+
+  if (*pattern == '\0') {
+    return 1;
+  }
+
+  return 0;
+}
+
+_Bool urlcmp_icase(const char *url, const char *pattern) {
+  if (pattern[0] == '!') {
+    return strcmp_icase(url, pattern + 1);
+  }
+
+  while (*url != '\0' && *pattern != '\0') {
+    if (tolower(*url) != tolower(*pattern)) {
+      return 0;
+    }
+    ++url;
+    ++pattern;
+  }
+
+  if (*pattern == '\0') {
+    return 1;
+  }
+
+  return 0;
+}
+
 const char *log_level_controls[] = {
   [LL_DEBUG] = "96",
   [LL_INFO] = "32",
@@ -107,3 +147,4 @@ void chttpdLog(LogLevel logLevel,
     bufferSize = 0;
   }
 }
+

@@ -91,6 +91,8 @@ int main(int argc, const char *argv[]) {
   } else {
     LOG_INFO(" - cache disabled");
   }
+  LOG_INFO(" - case ignore set to %s",
+           config.ignoreCase ? "true" : "false");
   for (size_t i = 0; i < ccVecLen(&config.routes); i++) {
     Route *route = (Route*)ccVecNth(&config.routes, i);
     LOG_INFO(" - route \"%s %s\" to \"%s %s\"",
@@ -294,9 +296,12 @@ static void routeAndHandle(const Config *config,
                            HttpRequest *request,
                            FILE *fp,
                            Error *error) {
+  _Bool (*urlCompare)(const char*, const char*) = 
+    config->ignoreCase ? urlcmp_icase : urlcmp;
+
   for (size_t i = 0; i < ccVecLen(&config->routes); i++) {
     const Route *route = (Route*)ccVecNth(&config->routes, i);
-    if (!strcmp(request->requestPath, route->path)
+    if (urlCompare(request->requestPath, route->path)
         && request->method == route->httpMethod) {
       switch (route->handlerType) {
       case HDLR_SCRIPT:
@@ -319,5 +324,4 @@ static void routeAndHandle(const Config *config,
 
   QUICK_ERROR(error, 404, "");
 }
-
 

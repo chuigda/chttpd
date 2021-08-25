@@ -11,6 +11,7 @@
 #define DEFAULT_PORT            8080
 #define DEFAULT_MAX_PENDING     16
 #define DEFAULT_PRELOAD_DYNAMIC 0
+#define DEFAULT_IGNORE_CASE     1
 #define DEFAULT_CACHE_TIME      (-1)
 
 const char *HANDLER_TYPE_NAMES[] = {
@@ -24,6 +25,7 @@ void initConfig(Config *config) {
   config->port = DEFAULT_PORT;
   config->maxPending = DEFAULT_MAX_PENDING;
   config->preloadDynamic = DEFAULT_PRELOAD_DYNAMIC;
+  config->ignoreCase = DEFAULT_IGNORE_CASE;
   config->cacheTime = DEFAULT_CACHE_TIME;
   ccVecInit(&config->routes, sizeof(Route));
 }
@@ -45,7 +47,7 @@ static pl2b_Cmd *configIntAttr(pl2b_Program *program,
                                int upperBound);
 
 static pl2b_Cmd *configBoolAttr(pl2b_Program *program,
-                                int *dest,
+                                _Bool *dest,
                                 pl2b_Cmd *command,
                                 Error *error);
 
@@ -60,6 +62,11 @@ static pl2b_Cmd *configPend(pl2b_Program *program,
                             Error *error);
 
 static pl2b_Cmd *configPreloadDyn(pl2b_Program *program,
+                                  void *context,
+                                  pl2b_Cmd *command,
+                                  Error *error);
+
+static pl2b_Cmd *configIgnoreCase(pl2b_Program *program,
                                   void *context,
                                   pl2b_Cmd *command,
                                   Error *error);
@@ -80,6 +87,7 @@ const pl2b_Language *getCfgLanguage(void) {
     { "listen-port",    NULL, configPort,       0, 0 },
     { "max-pending",    NULL, configPend,       0, 0 },
     { "preload",        NULL, configPreloadDyn, 0, 0 },
+    { "ignore-case",    NULL, configIgnoreCase, 0, 0 },
     { "cache-time",     NULL, configCacheTime,  0, 0 },
     { "post",           NULL, addRoute,         0, 0 },
     { "POST",           NULL, addRoute,         0, 0 },
@@ -148,7 +156,7 @@ static pl2b_Cmd *configIntAttr(pl2b_Program *program,
 }
 
 static pl2b_Cmd *configBoolAttr(pl2b_Program *program,
-                                int *dest,
+                                _Bool *dest,
                                 pl2b_Cmd *command,
                                 Error *error) {
   (void)program;
@@ -209,6 +217,17 @@ static pl2b_Cmd *configPreloadDyn(pl2b_Program *program,
   Config *config = (Config*)context;
   return configBoolAttr(program,
                         &config->preloadDynamic,
+                        command,
+                        error);
+}
+
+static pl2b_Cmd *configIgnoreCase(pl2b_Program *program,
+                                  void *context,
+                                  pl2b_Cmd *command,
+                                  Error *error) {
+  Config *config = (Config*)context;
+  return configBoolAttr(program,
+                        &config->ignoreCase,
                         command,
                         error);
 }

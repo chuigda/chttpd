@@ -19,6 +19,8 @@ StringPair copyStringPair(StringPair src);
 void dropStringPair(StringPair pair);
 
 _Bool strcmp_icase(const char *lhs, const char *rhs);
+_Bool urlcmp(const char *url, const char *pattern);
+_Bool urlcmp_icase(const char *url, const char *pattern);
 
 typedef enum e_log_level {
   LL_DEBUG = 0,
