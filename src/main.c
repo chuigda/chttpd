@@ -122,6 +122,16 @@ static int httpMainLoop(const Config *config) {
     return -1;
   }
 
+  int reuseAddr = 1;
+  if (setsockopt(fdSock,
+                 SOL_SOCKET,
+                 SO_REUSEADDR,
+                 &reuseAddr,
+                 sizeof(int)) < 0) {
+    LOG_FATAL("failed setting SO_REUSEADDR: %d", errno);
+    return -1;
+  }
+
   struct in_addr listenAddress;
   int res = inet_aton(config->address, &listenAddress);
   if (res == 0) {
