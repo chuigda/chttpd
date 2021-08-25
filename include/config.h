@@ -23,16 +23,18 @@
 #include "util.h"
 
 #define CHTTPD_VER_MAJOR 0
-#define CHTTPD_VER_MINOR 1
+#define CHTTPD_VER_MINOR 2
 #define CHTTPD_VER_PATCH 0
 
 #define CHTTPD_NAME        "chttpd"
-#define CHTTPD_SERVER_NAME "chttpd/0.1"
+#define CHTTPD_SERVER_NAME "chttpd/0.2"
 
 typedef enum e_handler_type {
   HDLR_SCRIPT = 0,
   HDLR_STATIC = 1,
-  HDLR_DCGI   = 2
+  HDLR_DCGI   = 2,
+  HDLR_INTERN = 3,
+  HDLR_DIR    = 4
 } HandlerType;
 
 extern const char *HANDLER_TYPE_NAMES[];

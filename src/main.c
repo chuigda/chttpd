@@ -14,8 +14,9 @@
 #include "config.h"
 #include "dcgi.h"
 #include "file_util.h"
-#include "static.h"
 #include "http.h"
+#include "intern.h"
+#include "static.h"
 #include "util.h"
 
 #define LARGE_BUFFER_SIZE 65536
@@ -184,46 +185,6 @@ static int httpMainLoop(const Config *config) {
   return 0;
 }
 
-static const char *ERROR_PAGE_404_CONTENT = 
-"<html>\n"
-"  <meta charset=\"utf-8\">\n"
-"  <body>\n"
-"    <div align=\"center\">\n"
-"      <h2>404 Not Found</h2>\n"
-"      <hr/>\n"
-"      Powered by chttpd: https://github.com/ICEYSELF/chttpd\n"
-"    </div>\n"
-"  </body>\n"
-"</html>";
-
-static const char *ERROR_PAGE_404_HEAD = 
-"HTTP/1.1 404 Not Found\r\n";
-
-static const char *ERROR_PAGE_500_CONTENT_PART1 = 
-"<html>\n"
-"  <meta charset=\"utf-8\">\n"
-"  <body>\n"
-"    <div align=\"center\">\n"
-"      <h2>500 Internal Server Error</h2>\n"
-"      <hr/>\n"
-"      <code style=\"text-align: left\"><pre>\n";
-
-static const char *ERROR_PAGE_500_CONTENT_PART2 = 
-"      </pre></code>\n"
-"      Powered by chttpd: https://github.com/ICEYSELF/chttpd\n"
-"    </div>\n"
-"  </body>\n"
-"</html>";
-
-static const char *ERROR_PAGE_500_HEAD =
-"HTTP/1.1 500 Internal Server Error\r\n";
-
-static const char *GENERAL_HEADERS = 
-"Content-Type: text/html\r\n"
-"Content-Encoding: identity\r\n"
-"Cache-Control: public, max-age=1800\r\n"
-"Connection: close\r\n\r\n";
-
 static void* httpHandler(void *context) {
   HttpInputContext *inputContext = (HttpInputContext*)context;
   setWorkerId(inputContext->workerId);
@@ -246,15 +207,15 @@ static void* httpHandler(void *context) {
   LOG_INFO(" - ?%s", request->queryString);
   for (size_t i = 0; i < ccVecLen(&request->params); i++) {
     StringPair *param = (StringPair*)ccVecNth(&request->params, i);
-    LOG_DBG(" ?%s=%s", param->first, param->second);
+    LOG_INFO(" ?%s=%s", param->first, param->second);
   }
 
   for (size_t i = 0; i < ccVecLen(&request->headers); i++) {
     StringPair *header = (StringPair*)ccVecNth(&request->headers, i);
-    LOG_DBG(" %s: \"%s\"", header->first, header->second);
+    LOG_INFO(" %s: \"%s\"", header->first, header->second);
   }
   if (request->contentLength != 0) {
-    LOG_DBG("body:\n\n%s", request->body);
+    LOG_INFO("body:\n\n%s", request->body);
   }
 
   Error *error = errorBuffer(SMALL_BUFFER_SIZE);
@@ -263,23 +224,12 @@ static void* httpHandler(void *context) {
   dropHttpRequest(request);
 
   if (!isError(error)) {
+  } else if (error->errCode == 403) {
+    send403Page(fp);
   } else if (error->errCode == 404) {
-    fputs(ERROR_PAGE_404_HEAD, fp);
-    fprintf(fp, "Content-Length: %zu\r\n",
-            strlen(ERROR_PAGE_404_CONTENT));
-    fprintf(fp, "Server: %s\r\n", CHTTPD_SERVER_NAME);
-    fputs(GENERAL_HEADERS, fp);
-    fputs(ERROR_PAGE_404_CONTENT, fp);
+    send404Page(fp);
   } else {
-    fputs(ERROR_PAGE_500_HEAD, fp);
-    fprintf(fp, "Server: %s\r\n", CHTTPD_SERVER_NAME);
-    fputs(GENERAL_HEADERS, fp);
-    fputs(ERROR_PAGE_500_CONTENT_PART1, fp);
-    fprintf(fp, "%s:%zi: %s",
-            error->sourceInfo.sourceFile,
-            error->sourceInfo.line,
-            error->errorBuffer);
-    fputs(ERROR_PAGE_500_CONTENT_PART2, fp);
+    send500Page(fp, error);
   }
 
   dropError(error);
@@ -316,6 +266,12 @@ static void routeAndHandle(const Config *config,
                    request,
                    fp,
                    error);
+        break;
+      case HDLR_INTERN:
+        handleIntern(route->handlerPath, error);
+        break;
+      case HDLR_DIR:
+        QUICK_ERROR(error, 500, "DIR not supported yet");
         break;
       }
       return;

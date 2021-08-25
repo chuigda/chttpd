@@ -18,6 +18,7 @@ all_deps: \
 	util \
 	pl2 \
 	config \
+	intern \
 	html \
 	agno3 \
 	http
@@ -33,6 +34,7 @@ HEADERS = include/agno3.h \
 	include/http_base.h \
 	include/pl2b.h \
 	include/static.h \
+	include/intern.h \
 	include_ext/cc_defs.h \
 	include_ext/cc_list.h \
 	include_ext/cc_vec.h
@@ -57,6 +59,7 @@ chttpd: all_deps src/main.c
 		${PL2_OBJECTS} \
 		${UTIL_OBJECTS} \
 		${CCLIB_OBJECTS} \
+		${INTERN_OBJECTS} \
 		-o chttpd -lpthread -ldl
 
 # Build HTTP objects
@@ -112,17 +115,32 @@ out/html.o: src/html.c ${HEADERS}
 # Build CFG lang objects
 CONFIG_OBJECTS := out/config.o
 
-.PHONY: cfglang cfglang_prompt
-config: cfglang_prompt ${CONFIG_OBJECTS}
+.PHONY: config config_prompt
+config: config_prompt ${CONFIG_OBJECTS}
 
 config_prompt:
-	@echo Building chttpd configuration language
+	@echo Building chttpd configuration system
 
 out/config.o: src/config.c ${HEADERS}
 	@$(LOG) CC src/config.c
 	@$(CC) src/config.c \
 		$(INCLUDES) $(WARNINGS) $(CFLAGS) \
 		-c -o out/config.o
+
+# Build internal pages
+INTERN_OBJECTS := out/intern.o
+
+.PHONY: intern intern_prompt
+intern: intern_prompt ${INTERN_OBJECTS}
+
+intern_prompt:
+	@echo Building internal pages
+
+out/intern.o: src/intern.c ${HEADERS}
+	@$(LOG) CC src/intern.c
+	@$(CC) src/intern.c \
+		$(INCLUDES) $(WARNINGS) $(CFLAGS) \
+		-c -o out/intern.o
 
 # Build PL2 objects
 PL2_OBJECTS := out/pl2b.o
@@ -221,7 +239,7 @@ out_dir_prompt:
 	@echo "Creating output directory"
 
 out/:
-	@$(LOG) MKDIR out
+	$(LOG) MKDIR out
 	@mkdir -p out
 
 # Create auxiliary directories

@@ -17,7 +17,9 @@
 const char *HANDLER_TYPE_NAMES[] = {
   [HDLR_SCRIPT] = "SCRIPT",
   [HDLR_STATIC] = "STATIC",
-  [HDLR_DCGI]   = "DCGI"
+  [HDLR_DCGI]   = "DCGI",
+  [HDLR_INTERN] = "INTERN",
+  [HDLR_DIR]    = "DIR"
 };
 
 void initConfig(Config *config) {
@@ -285,6 +287,12 @@ static pl2b_Cmd* addRoute(pl2b_Program *program,
   } else if (strcmp_icase(handlerTypeStr,
                           HANDLER_TYPE_NAMES[HDLR_DCGI])) {
     handlerType = HDLR_DCGI;
+  } else if (strcmp_icase(handlerTypeStr,
+                          HANDLER_TYPE_NAMES[HDLR_INTERN])) {
+    handlerType = HDLR_INTERN;
+  } else if (strcmp_icase(handlerTypeStr,
+                          HANDLER_TYPE_NAMES[HDLR_DIR])) {
+    handlerType = HDLR_DIR;
   } else {
     formatError(error, command->sourceInfo, -1,
                 "%s: incorrect handler type: %s",

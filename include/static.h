@@ -9,4 +9,10 @@ void handleStatic(const char *filePath,
                   int cacheTime,
                   Error *error);
 
+void handleDir(const char *route,
+               const char *dirPath,
+               FILE *fp,
+               int cacheTime,
+               Error *error);
+
 #endif /* CHTTPD_STATIC_H */
