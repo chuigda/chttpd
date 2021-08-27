@@ -40,10 +40,10 @@ cache-time 1800
 preload true
 case-ignore true
 
-GET /           STATIC ./src/index.html
-GET /index.html STATIC ./src/index.html
-GET /robots.txt STATIC ./src/robots.txt
-GET /api/login  DCGI   ./dcgi/liblogin.so
+GET  !/robots.txt STATIC ./src/robots.txt
+POST !/api/login  DCGI   ./dcgi/liblogin.so
+GET  /            STATIC ./src/index.html
+POST /            INTERN 403
 ```
 
 The first 5 lines (`listen-address`, `listen-port`, `max-pending`) configures how the HTTP
@@ -65,12 +65,22 @@ The following 4 lines are routes. A route has the following format:
 HTTP-METHOD request-path HANDLER-TYPE handler-path
 ```
 
-By this time, `STATIC` handler (for serving static files) and `DCGI` handler (for serving dynamic
-contents) are supported. For more informations about these handlers please refer to the following
-sections. Note that if one of the `handler-path`s is incorrect, `chttpd` does not immediately
-figure out your mistake, but give you a `500` when that route gets used.
+By this time, `STATIC` handler (for serving static files), `DCGI` handler (for serving dynamic
+contents) and `INTERN` handler (for sending internal error pages) are supported. For more
+informations about these handlers please refer to the following sections. 
+
+The if threre's an exclaimation mark (`!`) at the commence of the `request-path`, then this route
+is expected to be matched exactly. Otherwise it will be matched in some wildcard way. For
+example, `/` will match `/index`, `/login` or so.
+
+Note that if one of the `handler-path`s is incorrect, `chttpd` does not always immediately
+figure out your mistake, but may give you a `500` when that route gets used.
 
 PL2 is another toy of mine. See [PL2 infrared missile](https://github.com/PL2-Lang/PL2)
+
+## 🛠️ Sending internal pages
+By using `INTERN` handler you can send an error page to client. By this time, HTTP errors
+`403`, `404` and `500` are supported.
 
 ## 📂 Serving static files
 By using `STATIC` handler you can serve static files. Unfortunately, by this time `chttpd` is not
@@ -79,9 +89,7 @@ explicitly appoint every single file path.
 
 `chttpd` supports very limited mime guessing. See `src/static.c` for more information.
 
-## 🔄 Serving dynamic contents
-
-### 🗡️ By using DCGI
+## 🔄 Serving dynamic contents by DCGI
 `DCGI` (Dynamic Common Gateway Interface) is a interface exploiting dynamic library utilities. To
 use `DCGI`, you need to:
   - Write a C module, define a `dcgi_main` function, write handing mechanism within that function.
@@ -91,25 +99,27 @@ use `DCGI`, you need to:
 A `dcgi_main` function looks like:
 
 ```c
-int dcgi_main(/* input */  const char *queryPath,      /* 1 */
-              /* input */  const StringPair headers[], /* 2 */
-              /* input */  const StringPair params[],  /* 3 */
-              /* input */  const char *body,           /* 4 */
-              /* output */ StringPair **headerDest,    /* 5 */
-              /* output */ char **dataDest,            /* 6 */
-              /* output */ char **errDest) {           /* 7 */
+int dcgi_main(/* input */  int method, /* 1 */
+              /* input */  const char *queryPath,      /* 2 */
+              /* input */  const StringPair headers[], /* 3 */
+              /* input */  const StringPair params[],  /* 4 */
+              /* input */  const char *body,           /* 5 */
+              /* output */ StringPair **headerDest,    /* 6 */
+              /* output */ char **dataDest,            /* 7 */
+              /* output */ char **errDest) {           /* 8 */
   /* your handling code */
-  return your_return_code;                /* 8 */
+  return your_return_code;                /* 9 */
 }
 ```
 
 Explainations
-  1. `queryPath`: The path part of HTTP request, not including query parameters. 
+  1. `method`: The HTTP method of HTTP request, 0 for `GET` and 1 for `POST`.
+  2. `queryPath`: The path part of HTTP request, not including query parameters. 
      - example:
        - `/index.html`
        - `/robots.txt`
        - `/api/login`
-  2. `headers`: Array of header pairs. the `first` part of `StringPair` is the header name, and 
+  3. `headers`: Array of header pairs. the `first` part of `StringPair` is the header name, and 
      the `second` part of `StringPair` is the header value. No escape conversions is performed.
      The whole array ends with a `{ .first = NULL, .second = NULL }` pair.
      - example:
@@ -122,7 +132,7 @@ Explainations
          (StringPair) {NULL, NULL}
        }
        ```
-  3. `params`: Similar to `headers`, but stores query parameters.
+  4. `params`: Similar to `headers`, but stores query parameters.
      - example:
        ```
        {
@@ -131,8 +141,8 @@ Explainations
          (StringPair) {NULL, NULL}
        }
        ```
-  4. `body`: Null terminated string, presents if `Content-Length` is not zero, `NULL` otherwise.
-  5. `headerDest`: Used for `dcgi_main` to output headers. Keep it untouched if no output header.
+  5. `body`: Null terminated string, presents if `Content-Length` is not zero, `NULL` otherwise.
+  6. `headerDest`: Used for `dcgi_main` to output headers. Keep it untouched if no output header.
      Use "null-terminated array" structure, and make sure every string is on the heap.
      - example:
        ```c
@@ -153,15 +163,14 @@ Explainations
        (*headerDest)[1][0] = NULL;
        (*headerDest)[1][1] = NULL;
        ```
-  6. `dataDest`: Used for `dcgi_main` to output response body. Keep it untouched if no response
+  7. `dataDest`: Used for `dcgi_main` to output response body. Keep it untouched if no response
      body. Use null-terminated string, and make sure it's on the heap.
      - example:
        ```c
        *dataDest = copyString("Excuse you!");
        ```
-  7. `errDest`: Used for `dcgi_main` to output error information. Keep it untouched if no error.
-  8. Return value: Return `0` or `200` to indicate successful response, any othre value to
-     indicate failed response.
+  8. `errDest`: Used for `dcgi_main` to output error information. Keep it untouched if no error.
+  9. Return value: Return `200` to indicate successful response, any othre value to indicate
+     failed response. If returned code is not `5xx`, the response body will be delivered as-is;
+     if so, chttpd will send a internal page containing the response.
 
-### 🥈 By using AgNO3
-> Not implemented by this time
