@@ -11,18 +11,20 @@ beginner, in order not to be misleaded.
 ## ⚠️⚠️⚠️ KNOWN ISSUES ⚠️⚠️⚠️
  - Minor memory leak from `getdelim` function
  - `SIGPIPE`s are simply ignored. No proof on negative effects by this time, though.
+ - Suspicious crash (`SIGSEGV`?) after running for several days.
 
 ## 🔨 Build
-This project supoorts POSIX platform in theory. Tested on the following platforms:
+This project supports all POSIX platforms in theory. Tested on the following platforms:
   - x86_64-unknown-linux-gnu
   - i386-unknown-linux-gnu
   - i386-unknown-linux-musl
   - cygwin x86_64
+  - msys2
 
 To build, just clone the code and run `make` in the project directory. Seems that no much
 dependencies are required.
 
-For release build, the following `CFLAGS` setup is recommended:
+For release build (if you really want), the following `CFLAGS` setup is recommended:
 ```shell
 CFLAGS="-O2 -g -fstack-protector-strong" make
 ```
