@@ -19,17 +19,13 @@ all_deps: \
 	pl2 \
 	config \
 	intern \
-	html \
-	agno3 \
 	http
 
 # All headers
-HEADERS = include/agno3.h \
-	include/config.h \
+HEADERS = include/config.h \
 	include/dcgi.h \
 	include/file_util.h \
 	include/error.h \
-	include/html.h \
 	include/http.h \
 	include/http_base.h \
 	include/pl2b.h \
@@ -53,8 +49,6 @@ chttpd: all_deps src/main.c
 	@$(LOG) BUILD chttpd
 	@$(CC) out/main.o \
 		${HTTP_OBJECTS} \
-		${AGNO3_OBJECTS} \
-		${HTML_OBJECTS} \
 		${CONFIG_OBJECTS} \
 		${PL2_OBJECTS} \
 		${UTIL_OBJECTS} \
@@ -83,34 +77,6 @@ out/static.o: src/static.c ${HEADERS}
 	@$(LOG) CC src/static.c
 	@$(CC) src/static.c $(INCLUDES) $(WARNINGS) $(CFLAGS) \
 		-c -o out/static.o
-
-# Build AgNO3 lang objects
-AGNO3_OBJECTS := out/agno3.o
-
-.PHONY: agno3 agno3_prompt
-agno3: agno3_prompt ${AGNO3_OBJECTS}
-
-agno3_prompt:
-	@echo Building AgNO3 html preprocessor
-
-out/agno3.o: src/agno3.c src/agno3_impl.c ${HEADERS}
-	@$(LOG) CC src/agno3.c
-	@$(CC) src/agno3.c \
-		$(INCLUDES) $(WARNINGS) $(CFLAGS) \
-		-I src/ -c -o out/agno3.o
-
-# Build HTML library objects
-HTML_OBJECTS := out/html.o
-
-.PHONY: html html_prompt
-html: html_prompt out/html.o
-
-html_prompt:
-	@echo Building HTML generation and rendering library
-
-out/html.o: src/html.c ${HEADERS}
-	@$(LOG) CC src/html.c
-	@$(CC) src/html.c $(INCLUDES) $(WARNINGS) $(CFLAGS) -c -o out/html.o
 
 # Build CFG lang objects
 CONFIG_OBJECTS := out/config.o
@@ -239,7 +205,7 @@ out_dir_prompt:
 	@echo "Creating output directory"
 
 out/:
-	$(LOG) MKDIR out
+	@$(LOG) MKDIR out
 	@mkdir -p out
 
 # Create auxiliary directories

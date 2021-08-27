@@ -264,9 +264,6 @@ static void routeAndHandle(const Config *config,
     if (urlCompare(request->requestPath, route->path)
         && request->method == route->httpMethod) {
       switch (route->handlerType) {
-      case HDLR_SCRIPT:
-        QUICK_ERROR(error, 500, "SCRIPT not supported yet");
-        break;
       case HDLR_STATIC:
         handleStatic(route->handlerPath, fp, config->cacheTime, error);
         break;

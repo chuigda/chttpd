@@ -4,14 +4,14 @@
  *   lines ::= lines line | NIL
  *   line ::= router-line | filter-line | config-line
  *   router-line ::= method PATH handler-type HANDLER
- *   filter-line ::= "filter" PATH filter-type FILTER maybe-exact
  *   method ::= "get" | "post"
- *   handler-type ::= "script" | "dcgi" | "static"
- *   filter-type ::= "script" | "dcgi"
- *   maybe-exact ::= "exact" | NIL
+ *   handler-type ::= "dcgi" | "static" | "intern"
  *   config-line ::= "listen-address" ADDRESS
  *                 | "listen-port" PORT
  *                 | "max-pending" MAX-PENDING
+ *                 | "preload"     PRELOAD
+ *                 | "cache-time"  CACHE-TIME
+ *                 | "ignore-case" IGNORE-CASE
  */
 
 #ifndef CHTTPD_CONFIG_H
@@ -27,10 +27,9 @@
 #define CHTTPD_VER_PATCH 0
 
 #define CHTTPD_NAME        "chttpd"
-#define CHTTPD_SERVER_NAME "chttpd/0.2"
+#define CHTTPD_SERVER_NAME "chttpd/bravo1"
 
 typedef enum e_handler_type {
-  HDLR_SCRIPT = 0,
   HDLR_STATIC = 1,
   HDLR_DCGI   = 2,
   HDLR_INTERN = 3,

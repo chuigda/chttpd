@@ -36,11 +36,5 @@ typedef struct st_http_response {
   char body[0];
 } HttpResponse;
 
-HttpResponse *createHttpResponse(HttpCode code,
-                                 const char *statusText,
-                                 ccVec headers,
-                                 const char *body);
-int writeHttpResponse(FILE *fp, HttpResponse *response);
-void dropHttpResponse(HttpResponse *response);
-
 #endif /* CHTTPD_HTTP_H */
+

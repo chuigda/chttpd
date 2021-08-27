@@ -15,7 +15,6 @@
 #define DEFAULT_CACHE_TIME      (-1)
 
 const char *HANDLER_TYPE_NAMES[] = {
-  [HDLR_SCRIPT] = "SCRIPT",
   [HDLR_STATIC] = "STATIC",
   [HDLR_DCGI]   = "DCGI",
   [HDLR_INTERN] = "INTERN",
@@ -279,10 +278,7 @@ static pl2b_Cmd* addRoute(pl2b_Program *program,
   HandlerType handlerType;
   const char *handlerTypeStr = command->args[1].str;
   if (strcmp_icase(handlerTypeStr,
-                   HANDLER_TYPE_NAMES[HDLR_SCRIPT])) {
-    handlerType = HDLR_SCRIPT;
-  } else if (strcmp_icase(handlerTypeStr,
-                          HANDLER_TYPE_NAMES[HDLR_STATIC])) {
+                   HANDLER_TYPE_NAMES[HDLR_STATIC])) {
     handlerType = HDLR_STATIC;
   } else if (strcmp_icase(handlerTypeStr,
                           HANDLER_TYPE_NAMES[HDLR_DCGI])) {
