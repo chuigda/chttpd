@@ -97,6 +97,7 @@ HttpRequest *readHttpRequest(FILE *fp) {
     }
 
     if (strlen(line) == 2) {
+      free(line);
       break;
     }
 

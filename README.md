@@ -9,7 +9,6 @@ the C programming language used is not of good practice. Don't read this project
 beginner, in order not to be misleaded.
 
 ## ⚠️⚠️⚠️ KNOWN ISSUES ⚠️⚠️⚠️
- - Minor memory leak from `getdelim` function
  - `SIGPIPE`s are simply ignored. No proof on negative effects by this time, though.
  - Suspicious crash (`SIGSEGV`?) after running for several days.
 
