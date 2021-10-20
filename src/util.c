@@ -34,6 +34,17 @@ _Bool strcmp_icase(const char *lhs, const char *rhs) {
   return *lhs == *rhs;
 }
 
+_Bool slicecmp_icase(const char *begin, const char *end, const char *rhs) {
+  while (begin != end && *rhs != '\0') {
+    if (tolower(*begin) != tolower(*rhs)) {
+      return 0;
+    }
+    ++begin;
+    ++rhs;
+  }
+  return begin == end && *rhs == '\0';
+}
+
 _Bool urlcmp(const char *url, const char *pattern) {
   if (pattern[0] == '!') {
     return !strcmp(url, pattern + 1);

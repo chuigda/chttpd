@@ -1,5 +1,6 @@
 #include "config.h"
 #include "dcgi.h"
+#include "http_base.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -29,10 +30,12 @@ void initConfig(Config *config) {
   config->ignoreCase = DEFAULT_IGNORE_CASE;
   config->cacheTime = DEFAULT_CACHE_TIME;
   ccVecInit(&config->routes, sizeof(Route));
+  ccVecInit(&config->corsConfig, sizeof(CorsConfig));
 }
 
 void dropConfig(Config *config) {
   ccVecDestroy(&config->routes);
+  ccVecDestroy(&config->corsConfig);
 }
 
 static pl2b_Cmd* configAddr(pl2b_Program *program,
@@ -82,6 +85,11 @@ static pl2b_Cmd *addRoute(pl2b_Program *program,
                           pl2b_Cmd *command,
                           Error *error);
 
+static pl2b_Cmd *addCorsConfig(pl2b_Program *program,
+                               void *context,
+                               pl2b_Cmd *command,
+                               Error *error);
+
 const pl2b_Language *getCfgLanguage(void) {
   static pl2b_PCallCmd pCallCmds[] = {
     { "listen-address", NULL, configAddr,       0, 0 },
@@ -96,6 +104,9 @@ const pl2b_Language *getCfgLanguage(void) {
     { "get",            NULL, addRoute,         0, 0 },
     { "Get",            NULL, addRoute,         0, 0 },
     { "GET",            NULL, addRoute,         0, 0 },
+    { "cors",           NULL, addCorsConfig,    0, 0 },
+    { "Cors",           NULL, addCorsConfig,    0, 0 },
+    { "CORS",           NULL, addCorsConfig,    0, 0 },
     { NULL, NULL, NULL, 0, 0 }
   };
 
@@ -262,18 +273,7 @@ static pl2b_Cmd* addRoute(pl2b_Program *program,
     return NULL;
   }
 
-  HttpMethod method;
-  if (!strcmp(methodStr, "GET")
-      || !strcmp(methodStr, "Get")
-      || !strcmp(methodStr, "get")) {
-    method = HTTP_GET;
-  } else if (!strcmp(methodStr, "POST")
-             || !strcmp(methodStr, "Post")
-             || !strcmp(methodStr, "post")) {
-    method = HTTP_POST;
-  } else {
-    assert(0 && "unreachable");
-  }
+  HttpMethod method = parseHttpMethod(command->args[0].str, NULL);
 
   HandlerType handlerType;
   const char *handlerTypeStr = command->args[1].str;
@@ -329,5 +329,12 @@ static pl2b_Cmd* addRoute(pl2b_Program *program,
   ccVecPushBack(&config->routes, (void*)route);
 
   return command->next;
+}
+
+static pl2b_Cmd* addCorsConfig(pl2b_Program *program,
+                               void *context,
+                               pl2b_Cmd *command,
+                               Error *error) {
+
 }
 

@@ -19,6 +19,9 @@ StringPair copyStringPair(StringPair src);
 void dropStringPair(StringPair pair);
 
 _Bool strcmp_icase(const char *lhs, const char *rhs);
+_Bool slicecmp_icase(const char *begin,
+                     const char *end,
+                     const char *rhs);
 _Bool urlcmp(const char *url, const char *pattern);
 _Bool urlcmp_icase(const char *url, const char *pattern);
 

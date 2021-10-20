@@ -2,7 +2,8 @@
  * Basic grammar of configuration language:
  *   configuration ::= lines
  *   lines ::= lines line | NIL
- *   line ::= router-line | filter-line | config-line
+ *   line ::= router-line | filter-line | config-line | cors-line
+ *   cors-line ::= "cors" method PATH
  *   router-line ::= method PATH handler-type HANDLER
  *   method ::= "get" | "post"
  *   handler-type ::= "dcgi" | "static" | "intern"
@@ -47,6 +48,11 @@ typedef struct st_route {
   void *extra;
 } Route;
 
+typedef struct st_cors_config {
+  HttpMethod httpMethod;
+  const char *path;
+} CorsConfig;
+
 typedef struct st_config {
   const char *address;
   int port;
@@ -56,6 +62,7 @@ typedef struct st_config {
   int cacheTime;
 
   ccVec TP(Route) routes;
+  ccVec TP(CorsConfig) corsConfig;
 } Config;
 
 void initConfig(Config *config);

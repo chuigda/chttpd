@@ -10,7 +10,8 @@
 
 const char *HTTP_METHOD_NAMES[] = {
   [HTTP_GET] = "GET",
-  [HTTP_POST] = "POST"
+  [HTTP_POST] = "POST",
+  [HTTP_OPTIONS] = "OPTIONS"
 };
 
 const char *HTTP_CODE_NAMES[] = {
@@ -22,6 +23,40 @@ const char *HTTP_CODE_NAMES[] = {
   [HTTP_CODE_NOT_FOUND] = "Not Found",
   [HTTP_CODE_SERVER_ERR] = "Internal Server Error",
 };
+
+HttpMethod parseHttpMethod(const char *methodStr, _Bool *error) {
+  const char *const *METHOD_NAMES = HTTP_METHOD_NAMES;
+  if (strcmp_icase(methodStr, METHOD_NAMES[HTTP_GET])) {
+    return HTTP_GET;
+  } else if (strcmp_icase(methodStr, METHOD_NAMES[HTTP_POST])) {
+    return HTTP_POST;
+  } else if (strcmp_icase(methodStr, METHOD_NAMES[HTTP_OPTIONS])) {
+    return HTTP_OPTIONS;
+  } else {
+    if (error != NULL) {
+      *error = 1;
+    }
+    return HTTP_GET;
+  }
+}
+
+HttpMethod parseHttpMethodSlice(const char *begin,
+                                const char *end,
+                                _Bool *error) {
+  const char *const *METHOD_NAMES = HTTP_METHOD_NAMES;
+  if (slicecmp_icase(begin, end, METHOD_NAMES[HTTP_GET])) {
+    return HTTP_GET;
+  } else if (slicecmp_icase(begin, end, METHOD_NAMES[HTTP_POST])) {
+    return HTTP_POST;
+  } else if (slicecmp_icase(begin, end, METHOD_NAMES[HTTP_OPTIONS])) {
+    return HTTP_OPTIONS;
+  } else {
+    if (error != NULL) {
+      *error = 1;
+    }
+    return HTTP_GET;
+  }
+}
 
 const char *httpCodeNameSafe(int httpCode) {
   const char *ret = HTTP_CODE_NAMES[httpCode];

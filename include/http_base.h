@@ -2,8 +2,9 @@
 #define CHTTPD_HTTP_BASE_H
 
 typedef enum e_http_method {
-  HTTP_GET  = 0,
-  HTTP_POST = 1
+  HTTP_GET     = 0,
+  HTTP_POST    = 1,
+  HTTP_OPTIONS = 2
 } HttpMethod;
 
 typedef enum e_http_code {
@@ -20,5 +21,10 @@ extern const char *HTTP_METHOD_NAMES[];
 extern const char *HTTP_CODE_NAMES[];
 
 const char *httpCodeNameSafe(int httpCode);
+
+HttpMethod parseHttpMethod(const char *methodStr, _Bool *error);
+HttpMethod parseHttpMethodSlice(const char *begin,
+                                const char *end,
+                                _Bool *error);
 
 #endif /* HTTP_BASE_H */
