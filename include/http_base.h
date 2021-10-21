@@ -27,4 +27,6 @@ HttpMethod parseHttpMethodSlice(const char *begin,
                                 const char *end,
                                 _Bool *error);
 
+extern const char *HTTP_CORS_HEADERS;
+
 #endif /* HTTP_BASE_H */

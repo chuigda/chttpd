@@ -24,6 +24,11 @@ const char *HTTP_CODE_NAMES[] = {
   [HTTP_CODE_SERVER_ERR] = "Internal Server Error",
 };
 
+const char *HTTP_CORS_HEADERS = 
+"Access-Control-Allow-Origin: *\r\n"
+"Access-Control-Allow-Methods: *\r\n"
+"Access-Control-Allow-Headers: *\r\n";
+
 HttpMethod parseHttpMethod(const char *methodStr, _Bool *error) {
   const char *const *METHOD_NAMES = HTTP_METHOD_NAMES;
   if (strcmp_icase(methodStr, METHOD_NAMES[HTTP_GET])) {
@@ -241,11 +246,9 @@ static _Bool parseHttpFirstLine(const char *line,
     return 0;
   }
 
-  if (!strncmp(line, "GET", it - line)) {
-    *method = HTTP_GET;
-  } else if (!strncmp(line, "POST", it - line)) {
-    *method = HTTP_POST;
-  } else {
+  _Bool parseError = 0;
+  *method = parseHttpMethodSlice(line, it, &parseError);
+  if (parseError) {
     LOG_ERR("error parsing http request: \"%s\": unsupported method",
             line);
     return 0;

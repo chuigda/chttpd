@@ -273,7 +273,7 @@ static pl2b_Cmd* addRoute(pl2b_Program *program,
     return NULL;
   }
 
-  HttpMethod method = parseHttpMethod(command->args[0].str, NULL);
+  HttpMethod method = parseHttpMethod(methodStr, NULL);
 
   HandlerType handlerType;
   const char *handlerTypeStr = command->args[1].str;
@@ -310,23 +310,23 @@ static pl2b_Cmd* addRoute(pl2b_Program *program,
 
   const char *handler = command->args[2].str;
 
-  Route *route = (Route*)malloc(sizeof(Route));
-  route->httpMethod = method;
-  route->path = path;
-  route->handlerType = handlerType;
-  route->handlerPath = handler;
+  Route route;
+  route.httpMethod = method;
+  route.path = path;
+  route.handlerType = handlerType;
+  route.handlerPath = handler;
 
-  if (route->handlerType == HDLR_DCGI && config->preloadDynamic != 0) {
-    LOG_DBG("preloading dynamic library \"%s\"", route->handlerPath);
-    route->extra = loadDCGIModule(route->handlerPath, error);
+  if (route.handlerType == HDLR_DCGI && config->preloadDynamic != 0) {
+    LOG_DBG("preloading dynamic library \"%s\"", route.handlerPath);
+    route.extra = loadDCGIModule(route.handlerPath, error);
     if (isError(error)) {
       return NULL;
     }
   } else {
-    route->extra = NULL;
+    route.extra = NULL;
   }
 
-  ccVecPushBack(&config->routes, (void*)route);
+  ccVecPushBack(&config->routes, &route);
 
   return command->next;
 }
@@ -335,6 +335,45 @@ static pl2b_Cmd* addCorsConfig(pl2b_Program *program,
                                void *context,
                                pl2b_Cmd *command,
                                Error *error) {
+  (void)program;
 
+  Config *config = (Config*)context;
+  const char *corsStr = command->cmd.str; 
+  if (pl2b_argsLen(command) != 2) {
+    formatError(error, command->sourceInfo, -1,
+                "%s: expect exactly two arguments",
+                corsStr);
+  }
+
+  const char *methodStr = command->args[0].str;
+  _Bool isError = 0;
+  HttpMethod method = parseHttpMethod(methodStr, &isError);
+  if (isError) {
+    formatError(error, command->sourceInfo, -1,
+                "%s: incorrect method type: %s",
+                corsStr, methodStr);
+  }
+
+  const char *path = command->args[1].str;
+  size_t corsConfigCount = ccVecSize(&config->corsConfig);
+  for (size_t i = 0; i < corsConfigCount; i++) {
+    CorsConfig *configItem =
+      (CorsConfig*)ccVecNth(&config->corsConfig, i);
+    if (!strcmp(path, configItem->path)
+        && configItem->httpMethod == method) {
+      formatError(error, command->sourceInfo, -1,
+                  "cors config for \"%s %s\" already exists",
+                  methodStr, path);
+      return NULL;
+    }
+  }
+
+  CorsConfig configItem;
+  configItem.httpMethod = method;
+  configItem.path = path;
+
+  ccVecPushBack(&config->corsConfig, &configItem);
+
+  return command->next;
 }
 
