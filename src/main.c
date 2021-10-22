@@ -29,12 +29,18 @@ typedef struct st_http_input_context {
   char *clientAddr;
 } HttpInputContext;
 
+typedef _Bool (UrlCompare)(const char*, const char*);
+
 static int httpMainLoop(const Config *config);
 static void *httpHandler(void* context);
 static void routeAndHandle(const Config *config,
                            HttpRequest *request,
                            FILE *fp,
                            Error *error);
+static _Bool isCorsRequest(const HttpRequest *request);
+static unsigned getAllowedCorsMethods(const Config *config,
+                                      const char *path,
+                                      UrlCompare *urlCompare);
 
 int main(int argc, const char *argv[]) {
   signal(SIGPIPE, SIG_IGN);
@@ -256,10 +262,11 @@ static void routeAndHandle(const Config *config,
                            HttpRequest *request,
                            FILE *fp,
                            Error *error) {
-  _Bool (*urlCompare)(const char*, const char*) = 
+  UrlCompare *urlCompare = 
     config->ignoreCase ? urlcmp_icase : urlcmp;
 
-  for (size_t i = 0; i < ccVecLen(&config->routes); i++) {
+  size_t routeCount = ccVecLen(&config->routes);
+  for (size_t i = 0; i < routeCount; i++) {
     const Route *route = (Route*)ccVecNth(&config->routes, i);
     if (urlCompare(request->requestPath, route->path)
         && request->method == route->httpMethod) {
@@ -286,5 +293,51 @@ static void routeAndHandle(const Config *config,
   }
 
   QUICK_ERROR(error, 404, "");
+}
+
+static void respondToOptionsRequest(const Config *config,
+                                    FILE *fp,
+                                    unsigned allowedMethods) {
+  if (allowedMethods == 0) {
+    send405Page(fp);
+  }
+
+
+}
+
+static _Bool isCorsRequest(const HttpRequest *request) {
+  _Bool hasReferer = 0;
+  _Bool hasOrigin = 0;
+
+  size_t headerCount = ccVecLen(&request->headers);
+  for (size_t i = 0; i < headerCount; i++) {
+    StringPair *header = (StringPair*)ccVecNth(&request->headers, i);
+    if (strcmp_icase(header->first, "Referer")) {
+      hasReferer = 1;
+      continue;
+    }
+
+    if (strcmp_icase(header->second, "Origin")) {
+      hasOrigin = 1;
+    }
+  }
+
+  return hasReferer && hasOrigin;
+}
+  
+static unsigned getAllowedCorsMethods(const Config *config,
+                                      const char *path,
+                                      UrlCompare *urlCompare) {
+  unsigned ret = 0;
+
+  size_t corsConfigCount = ccVecLen(&config->corsConfig);
+  for (size_t i = 0; i < corsConfigCount; i++) {
+    const CorsConfig *configItem =
+      (const CorsConfig*)ccVecNth(&config->corsConfig, i);
+    if (urlCompare(path, configItem->path)) {
+      ret |= configItem->httpMethod;
+    }
+  }
+  return ret;
 }
 

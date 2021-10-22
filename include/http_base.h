@@ -2,9 +2,9 @@
 #define CHTTPD_HTTP_BASE_H
 
 typedef enum e_http_method {
-  HTTP_GET     = 0,
-  HTTP_POST    = 1,
-  HTTP_OPTIONS = 2
+  HTTP_GET     = 0x01,
+  HTTP_POST    = 0x02,
+  HTTP_OPTIONS = 0x04,
 } HttpMethod;
 
 typedef enum e_http_code {
@@ -17,6 +17,7 @@ typedef enum e_http_code {
   HTTP_CODE_SERVER_ERR    = 500
 } HttpCode;
 
+extern const HttpMethod HTTP_ALL_METHODS[];
 extern const char *HTTP_METHOD_NAMES[];
 extern const char *HTTP_CODE_NAMES[];
 

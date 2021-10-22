@@ -352,6 +352,14 @@ static pl2b_Cmd* addCorsConfig(pl2b_Program *program,
     formatError(error, command->sourceInfo, -1,
                 "%s: incorrect method type: %s",
                 corsStr, methodStr);
+    return NULL;
+  }
+
+  if (method == HTTP_OPTIONS) {
+    formatError(error, command->sourceInfo, -1,
+                "%s: appointing `OPTIONS` method is invalid",
+                corsStr);
+    return NULL;
   }
 
   const char *path = command->args[1].str;

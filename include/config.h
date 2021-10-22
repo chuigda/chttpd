@@ -28,7 +28,7 @@
 #define CHTTPD_VER_PATCH 0
 
 #define CHTTPD_NAME        "chttpd"
-#define CHTTPD_SERVER_NAME "chttpd/bravo1"
+#define CHTTPD_SERVER_NAME "chttpd/bravo2"
 
 typedef enum e_handler_type {
   HDLR_STATIC = 1,

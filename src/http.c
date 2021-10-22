@@ -8,6 +8,12 @@
 #include <string.h>
 #include <unistd.h>
 
+const HttpMethod HTTP_ALL_METHODS[] = {
+  HTTP_GET,
+  HTTP_POST,
+  HTTP_OPTIONS
+};
+
 const char *HTTP_METHOD_NAMES[] = {
   [HTTP_GET] = "GET",
   [HTTP_POST] = "POST",
@@ -26,7 +32,6 @@ const char *HTTP_CODE_NAMES[] = {
 
 const char *HTTP_CORS_HEADERS = 
 "Access-Control-Allow-Origin: *\r\n"
-"Access-Control-Allow-Methods: *\r\n"
 "Access-Control-Allow-Headers: *\r\n";
 
 HttpMethod parseHttpMethod(const char *methodStr, _Bool *error) {
