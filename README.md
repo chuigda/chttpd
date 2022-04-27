@@ -8,6 +8,9 @@ fact that this project should not be used in real-world production (you may want
 the C programming language used is not of good practice. Don't read this project code if you're
 beginner, in order not to be misleaded.
 
+Since `2022-04-27T02:35:00Z`, this project is no more maintained. Code on `master` branch
+won't build. Pick the latest release package if you really want to "use" this.
+
 ## ⚠️⚠️⚠️ KNOWN ISSUES ⚠️⚠️⚠️
  - `SIGPIPE`s are simply ignored. No proof on negative effects by this time, though.
  - Suspicious crash (`SIGSEGV`?) after running for several days.
